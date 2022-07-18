@@ -4,6 +4,7 @@ uniform sampler2D gcolor;
 uniform sampler2D depthtex0;
 uniform sampler2D gnormal;
 uniform sampler2D gaux1;
+uniform sampler2D gaux2;
 uniform mat4 gbufferModelView, gbufferModelViewInverse;
 uniform mat4 gbufferProjection, gbufferProjectionInverse;
 uniform float frameTimeCounter;
@@ -60,6 +61,7 @@ vec3 viewPos2UV(const vec3 viewPos, const mat4 proj) {
 
 void main() {
 vec3 albedo = texture2D(gcolor, uv).rgb;
+vec4 bloom = texture2D(gaux2, uv);
 float depth = texture2D(depthtex0, uv).r;
 vec3 worldNormal = texture2D(gnormal, uv).rgb;
 float reflectance = texture2D(gnormal, uv).a;
@@ -72,15 +74,19 @@ float duskDawn = min(smoothstep(0.0, 0.3, daylight), smoothstep(0.5, 0.3, daylig
 float skyBrightness = mix(0.5, 2.0, smoothstep(0.0, 0.1, daylight));
 float cosTheta = abs(dot(normalize(relPos), worldNormal));
 
+vec3 fogCol = getAtmosphere(normalize(relPos), sunPos, vec3(0.4, 0.65, 1.0), skyBrightness);
+fogCol = toneMapReinhard(fogCol);
+	
+float fogFact = clamp((length(relPos) - near) / (far - near), 0.0, 1.0);
+
 if (reflectance > 0.5 && depth < 1.0) {
 	worldNormal = getWaterWavNormal(fragPos.xz, frameTimeCounter) * getTBNMatrix(worldNormal);
 	vec3 refPos = reflect(normalize(viewPos), mat3(gbufferModelView) * worldNormal);
 	vec3 refUV = viewPos2UV(refPos, gbufferProjection);
 
-	vec2 underWaterBlur = hash22(floor(uv * 2048.0)) * 0.0016;
-	vec3 refracted = texture2D(gcolor, refract(vec3(uv, 1.0), getWaterWavNormal(fragPos.xz, frameTimeCounter) * 0.15, 1.0).xy).rgb;
-
-	vec3 reflectedSSR = texture2D(gcolor, refUV.xy).rgb;
+	vec3 refracted = texture2D(gcolor, refract(vec3(uv, 1.0), getWaterWavNormal(fragPos.xz, frameTimeCounter) * 0.1, 1.0).xy).rgb;
+	
+	vec3 ssr = texture2D(gcolor, refUV.xy).rgb;
 	float screenSpace = float(refUV.x > 0.0 && refUV.x < 1.0 && refUV.y > 0.0 && refUV.y < 1.0 && refUV.z > 0.0 && refUV.z < 1.0) * (1.0 - max(abs(refUV.x - 0.5), abs(refUV.y - 0.5)) * 2.0);
 
 	vec3 reflectedSky = getAtmosphere(reflect(normalize(relPos), worldNormal), sunPos, vec3(0.4, 0.65, 1.0), skyBrightness);
@@ -90,25 +96,22 @@ if (reflectance > 0.5 && depth < 1.0) {
 
     reflectedSky = mix(reflectedSky, clouds.rgb, clouds.a * 0.65);
 
-	vec3 reflected = mix(reflectedSky, reflectedSSR, smoothstep(0.0, 0.1, screenSpace));
+	vec3 reflected = mix(reflectedSky, ssr, smoothstep(0.0, 0.1, screenSpace));
 	if (isEyeInWater == 1) {
 		reflected = albedo;
 	}
 
+	refracted = mix(refracted, reflected, fogFact * 2.0);
+
 	albedo = mix(reflected, refracted, cosTheta);
 
-	albedo += min(specularLight(6.5, 50.0, sunPos, relPos, worldNormal), 1.0);
-}
+	albedo += min(specularLight(10.0, 200.0, sunPos, relPos, worldNormal), 1.0);
+	bloom += min(specularLight(10.0, 500.0, sunPos, relPos, worldNormal), 1.0);
 
-if (depth < 1.0) {
-    vec3 fogCol = getAtmosphere(normalize(relPos), sunPos, vec3(0.4, 0.65, 1.0), skyBrightness);
-    fogCol = toneMapReinhard(fogCol);
-	float fogFact = clamp((length(relPos) - near) / (far - near), 0.0, 1.0);
-	
 	albedo = mix(albedo, fogCol, fogFact);
 }
 
-	/* DRAWBUFFERS:0
+	/* DRAWBUFFERS:05
 	 * 0 = gcolor
      * 1 = gdepth
      * 2 = gnormal
@@ -119,4 +122,5 @@ if (depth < 1.0) {
      * 7 = gaux4
 	*/
 	gl_FragData[0] = vec4(albedo, 1.0); // gcolor
+	gl_FragData[1] = bloom; // gaux2
 }

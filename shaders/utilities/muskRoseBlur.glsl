@@ -8,11 +8,11 @@ mat2 getRotationMatrix(const float angle) {
 }
 
 vec3 blur(const sampler2D tex, const vec2 uv, const float radius) {
-	const int blurSteps = 64;
+	const int blurSteps = 24;
 
 	vec3 acc = vec3(0.0);
 	vec3 div = acc;
-    float r = 1.0;
+	float r = 1.0;
     vec2 vangle = vec2(0.0, radius * 0.01 / sqrt(float(blurSteps)));
     
 	for (int i = 0; i < blurSteps; i++) {  

@@ -16,6 +16,7 @@ varying vec3 viewPos;
 varying vec3 relPos;
 varying vec3 fragPos;
 flat varying float waterFlag;
+flat varying float bloomFlag;
 
 void main() {
 vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
@@ -31,19 +32,18 @@ vec3 worldNormal = normal;
 if (waterFlag > 0.5) {
     float cosTheta = abs(dot(normalize(relPos), worldNormal));
 
-    albedo.rgb = vec3(0.00, 0.01, 0.03);
+    albedo.rgb = vec3(0.0, 0.15, 0.3);
+    albedo.a   = mix(1.0, 0.1, cosTheta);
+}
 
-    /*
-     ** Really insane that smaller alpha value
-     * makes a weird circle never happened on
-     * Bedrock shaders. 
-    */
-    albedo.a = mix(1.0, 0.3, cosTheta);
+vec4 bloom = vec4(0.0);
+if (bloomFlag > 0.5) {
+    bloom = vec4(albedo.rgb, 1.0);
 }
 
 float reflectance = waterFlag > 0.5 ? 1.0 : 0.0;
 
-	/* DRAWBUFFERS:024
+	/* DRAWBUFFERS:0245
 	 * 0 = gcolor
      * 1 = gdepth
      * 2 = gnormal
@@ -56,6 +56,7 @@ float reflectance = waterFlag > 0.5 ? 1.0 : 0.0;
 	gl_FragData[0] = albedo; // gcolor
     gl_FragData[1] = vec4(worldNormal, reflectance); // gnormal
     gl_FragData[2] = vec4(uv0, uv1); // gaux1
+    gl_FragData[3] = bloom; // gaux2
 }
 #endif /* defined FRAGMENT */
 
@@ -75,6 +76,7 @@ varying vec3 viewPos;
 varying vec3 relPos;
 varying vec3 fragPos;
 flat varying float waterFlag;
+flat varying float bloomFlag;
 
 void main() {
 uv0 = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
@@ -89,6 +91,7 @@ fragPos = relPos + cameraPosition;
 
 #ifndef ENTITY
 	waterFlag = int(mc_Entity.x) == 10000 ? 1.0 : 0.0;
+    bloomFlag = int(mc_Entity.x) == 10001 ? 1.0 : 0.0;
 #else
 	waterFlag = 0.0;
 #endif

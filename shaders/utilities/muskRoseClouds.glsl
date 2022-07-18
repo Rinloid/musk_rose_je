@@ -30,15 +30,19 @@ float fBM(vec2 x, const float amp, const float lower, const float upper, const f
 }
 
 float cloudMap(const vec2 pos, const float time, const float amp, const float rain, const int oct) {
-    return fBM(pos, 0.55 - amp * 0.1, mix(0.82, 0.0, rain), 0.84, time, oct);
+    return fBM(pos, 0.545 - amp * 0.1, mix(0.8, 0.0, rain), 0.825, time, oct);
+}
+
+float cloudMapShade(const vec2 pos, const float time, const float amp, const float rain, const int oct) {
+    return fBM(pos * 0.9, 0.545 - amp * 0.1, mix(0.75, 0.0, rain), 1.0, time, oct);
 }
 
 vec4 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const float brightness, const float rain, const float time) {
     const vec3 cloudCol = vec3(1.0, 0.99, 0.97);
-    const float cloudHeight = 200.0;
-    const int cloudOctaves = 8;
-    const int cloudSteps = 24;
-    const float stepSize = 0.016;
+    const float cloudHeight = 256.0;
+    const int cloudOctaves = 6;
+    const int cloudSteps = 40;
+    const float stepSize = 0.012;
     const int raySteps = 2;
     const float rayStepSize = 0.18;
     
@@ -50,7 +54,7 @@ vec4 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const fl
         for (int i = 0; i < cloudSteps; i++) {
             float height = 1.0 + float(i) * stepSize;
             vec2 cloudPos = pos.xz / (pos.y) * height * cloudHeight;
-            cloudPos *= 0.01 + textureNoise(floor(pos.xz * 1024.0)) * 0.0001;
+            cloudPos *= 0.005;
 
             clouds.a += cloudMap(cloudPos, time, amp, rain, cloudOctaves);
 
@@ -59,14 +63,14 @@ vec4 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const fl
             float inside = 0.0;
             for (int i = 0; i < raySteps; i++) {
                 rayPos += rayStep;
-                float rayHeight = cloudMap(cloudPos * 0.9, time, amp, rain, cloudOctaves / 2);
+                float rayHeight = cloudMapShade(cloudPos, time, amp, rain, cloudOctaves);
                 
                 inside += max(0.0, rayHeight - (rayPos.y - pos.y));
             } inside /= float(raySteps);
 
             amp += 1.0 / float(cloudSteps);
 
-            clouds.rgb = mix(clouds.rgb + 0.1 / float(cloudSteps) * brightness, max(vec3(0.0), clouds.rgb - 0.3 / float(cloudSteps) * brightness), inside);
+            clouds.rgb = mix(clouds.rgb + 0.2 / float(cloudSteps) * brightness, max(vec3(0.0), clouds.rgb - 0.3 / float(cloudSteps) * brightness), inside);
         } clouds.a /= float(cloudSteps);
     }
 

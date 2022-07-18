@@ -17,11 +17,13 @@ varying vec2 uv;
 
 const float centerDepthHalflife = 2.0; // [0.0 1.0 2.0 3.0 4.0 5.0]
 const int steps = 6;
-
+const int bloomSteps = 6;
+#define ENABLE_DOF
+#define ENABLE_BLOOM
 void main() {
 vec3 albedo = texture2D(gcolor, uv).rgb;
-vec4 bloom = texture2D(gaux2, uv);
 float depth = texture2D(depthtex1, uv).r;
+vec4 bloom = texture2D(gaux2, uv);
 vec2 screenResolution = vec2(viewWidth, viewHeight);
 vec2 pixelSize = 1.0 / screenResolution;
 float centreDepth = centerDepthSmooth;
@@ -31,9 +33,34 @@ vec3 blurred = vec3(0.0);
 
 #ifdef ENABLE_DOF
 	if (unfocused > 0.0 && depth > 0.8) {
-		blurred += blur(gcolor, uv, unfocused * 0.5);
+		for (int i = -steps; i < steps; i++) {
+			for (int j = -steps; j < steps; j++) {
+				vec2 offset = vec2(i, j) * pixelSize;
+				offset *= getRotationMatrix(float(steps * 2 * steps * 2));
+
+				blurred += texture2D(gcolor, uv + offset * unfocused).rgb;
+			}
+		} blurred /= float(steps * 2 * steps * 2);
 
 		albedo = blurred;
+	}
+#endif
+
+#ifdef ENABLE_BLOOM
+	float brightness = dot(bloom.rgb, vec3(0.22, 0.707, 0.071));
+	brightness = brightness * brightness * brightness * brightness;
+
+	if (unfocused > 0.0 && depth > 0.8) {
+		for (int i = -bloomSteps; i < bloomSteps; i++) {
+			for (int j = -bloomSteps; j < bloomSteps; j++) {
+				vec2 offset = vec2(i, j) * pixelSize;
+				offset *= getRotationMatrix(float(bloomSteps * 2 * bloomSteps * 2));
+
+				blurred += texture2D(gaux2, uv + offset * 2.0).rgb;
+			}
+		} blurred /= float(bloomSteps * 2 * bloomSteps * 2);
+
+		albedo += blurred;
 	}
 #endif
 
