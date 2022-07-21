@@ -5,6 +5,7 @@ uniform sampler2D depthtex0;
 uniform sampler2D gnormal;
 uniform sampler2D gaux1;
 uniform sampler2D gaux2;
+uniform sampler2D gaux3;
 uniform sampler2D shadowtex0;
 uniform mat4 gbufferModelView, gbufferModelViewInverse;
 uniform mat4 gbufferProjection, gbufferProjectionInverse;
@@ -24,16 +25,16 @@ varying vec3 shadowLitPos, sunPos, moonPos;
 #include "utilities/muskRoseClouds.glsl"
 #include "utilities/muskRoseSpecular.glsl"
 
-vec3 uv2ViewPos(const vec2 uv, const mat4 projInv, const float depth) {
-    vec3 pos = vec3(uv, depth);
-	vec4 iProjDiag = vec4(projInv[0].x, projInv[1].y, projInv[2].zw);
-	vec3 p3 = pos * 2.0 - 1.0;
-    vec4 view = iProjDiag * p3.xyzz + projInv[3];
-
-    return view.xyz / view.w;
+/*
+ ** Generate a TBN matrix without tangent and binormal.
+*/
+mat3 getTBNMatrix(const vec3 normal) {
+    vec3 T = vec3(abs(normal.y) + normal.z, 0.0, normal.x);
+    vec3 B = cross(T, normal);
+    vec3 N = vec3(-normal.x, normal.y, normal.z);
+ 
+    return mat3(T, B, N);
 }
-
-#include "utilities/muskRoseSSAO.glsl"
 
 vec4 getViewPos(const mat4 projInv, const vec2 uv, const float depth) {
 	vec4 viewPos = projInv * vec4(vec3(uv, depth) * 2.0 - 1.0, 1.0);
@@ -64,159 +65,88 @@ vec4 getShadowPos(const mat4 modelViewInv, const mat4 projInv, const mat4 shadow
 	return shadowPos;
 }
 
-float getLuma(vec3 color) {
-    return dot(color, vec3(0.2126, 0.7152, 0.0722));
+vec3 uv2ViewPos(const vec2 uv, const mat4 projInv, const float depth) {
+    vec3 pos = vec3(uv, depth);
+	vec4 iProjDiag = vec4(projInv[0].x, projInv[1].y, projInv[2].zw);
+	vec3 p3 = pos * 2.0 - 1.0;
+    vec4 view = iProjDiag * p3.xyzz + projInv[3];
+
+    return view.xyz / view.w;
 }
 
-float getAO(vec4 vertexCol, const float shrinkLevel) {
-    float lum = vertexCol.g * 2.0 - (vertexCol.r < vertexCol.b ? vertexCol.r : vertexCol.b);
-
-    return min(lum + (1.0 - shrinkLevel), 1.0);
+vec3 viewPos2UV(const vec3 viewPos, const mat4 proj) {
+    vec4 clipSpace = proj * vec4(viewPos, 1.0);
+	
+    return ((clipSpace.xyz / clipSpace.w) * 0.5 + 0.5).xyz;
 }
 
-/*
- ** Uncharted 2 tone mapping
- ** Link (deleted): http://filmicworlds.com/blog/filmic-tonemapping-operators/
- ** Archive: https://bit.ly/3NSGy4r
- */
-vec3 uncharted2ToneMap_(vec3 x) {
-    const float A = 0.017; // Shoulder strength
-    const float B = 0.50;  // Linear strength
-    const float C = 0.02;  // Linear angle
-    const float D = 0.08; // Toe strength
-    const float E = 0.01;  // Toe numerator
-    const float F = 0.50;  // Toe denominator
-
-    return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
-}
-vec3 uncharted2ToneMap(vec3 frag, float exposureBias) {
-    const float whiteLevel = 112.0;
-
-    vec3 curr = uncharted2ToneMap_(exposureBias * frag);
-    vec3 whiteScale = 1.0 / uncharted2ToneMap_(vec3(whiteLevel, whiteLevel, whiteLevel));
-    vec3 color = curr * whiteScale;
-
-    return clamp(color, 0.0, 1.0);
-}
-
-vec3 contrastFilter(vec3 color, float contrast) {
-    float t = 0.5 - contrast * 0.5;
-
-    return clamp(color * contrast + t, 0.0, 1.0);
-}
-
-const float ambientOcclusionLevel = 1.0;
-const float sunPathRotation = -40.0;
-const float shadowMapResolution = 1024.0;
-const float shadowDistance = 512.0; 
-
-#define AMBIENT_LIGHT_INTENSITY 20.0
-#define SKYLIGHT_INTENSITY 2.0
-#define SUNLIGHT_INTENSITY 70.0
-#define RAY_INTENSITY 2.0
-#define MOONLIGHT_INTENSITY 1.2
-#define TORCHLIGHT_INTENSITY 2.0
-
-#define SKYLIT_COL vec3(0.9, 0.98, 1.0)
-#define SUNLIT_COL vec3(1.0, 0.9, 0.75)
-#define SUNLIT_COL_SET vec3(1.0, 0.60, 0.2)
 #define RAY_COL vec3(1.0, 0.85, 0.63)
-#define TORCHLIT_COL vec3(1.0, 0.65, 0.3)
-#define MOONLIT_COL vec3(0.75, 0.8, 1.0)
 
 void main() {
 vec3 albedo = texture2D(gcolor, uv).rgb;
+vec4 bloom = texture2D(gaux2, uv);
 float depth = texture2D(depthtex0, uv).r;
 vec3 worldNormal = texture2D(gnormal, uv).rgb;
 float reflectance = texture2D(gnormal, uv).a;
-vec2 uv0 = texture2D(gaux1, uv).rg;
-vec2 uv1 = texture2D(gaux1, uv).ba;
-vec4 bloom = texture2D(gaux2, uv);
+float outdoor = 1.0;
 vec3 viewPos = getViewPos(gbufferProjectionInverse, uv, depth).xyz;
 vec3 relPos = getRelPos(gbufferModelViewInverse, gbufferProjectionInverse, uv, depth).xyz;
 vec3 fragPos = relPos + cameraPosition;
-float cosTheta = abs(dot(normalize(relPos), worldNormal));
-float daylight = sin(sunPos.y);
-float outdoor = 1.0;
+float daylight = max(0.0, sin(sunPos.y));
 float duskDawn = min(smoothstep(0.0, 0.3, daylight), smoothstep(0.5, 0.3, daylight));
-float skyBrightness = mix(0.5, 2.0, smoothstep(0.0, 0.1, daylight));
+float skyBrightness = mix(0.7, 2.0, smoothstep(0.0, 0.1, daylight));
+float cosTheta = abs(dot(normalize(relPos), worldNormal));
 
-if (depth == 1.0) {
-    vec3 skyPos = normalize(relPos);
-    vec2 cloudPos = skyPos.xz / skyPos.y;
+vec3 fogCol = getAtmosphere(normalize(relPos), shadowLitPos, vec3(0.4, 0.65, 1.0), skyBrightness);
+fogCol = toneMapReinhard(fogCol);
+	
+float fogFact = clamp((length(relPos) - near) / (far - near), 0.0, 1.0);
+float rayFact = clamp((length(relPos * (duskDawn * 4.0)) - near) / (far - near), 0.0, 1.0);
 
-	albedo = getAtmosphere(skyPos, sunPos, vec3(0.4, 0.65, 1.0), skyBrightness);
-	albedo = toneMapReinhard(albedo);
-
-    vec4 clouds = renderClouds(skyPos, cameraPosition, sunPos, smoothstep(0.0, 0.25, daylight), rainStrength, frameTimeCounter);
-
-    albedo = mix(albedo, clouds.rgb, clouds.a * 0.65);
-    bloom += drawSun(cross(skyPos, sunPos) * 500.0);
-} else if (reflectance < 0.5) {
-	float diffuse = max(0.0, dot(shadowLitPos, worldNormal));
-
-    float shadows = 0.0;
-    if (diffuse > 0.0 && bool(step(0.5, uv1.y))) {
-        vec4 shadowPos = getShadowPos(gbufferModelViewInverse, gbufferProjectionInverse, shadowModelView, shadowProjection, relPos, uv, depth, diffuse);
-        if (shadowPos.w > 0.0) {
-            for (int i = 0; i < shadowSamples.length(); i++) {
-                vec2 offset = vec2(shadowSamples[i] / float(shadowMapResolution));
-                if (texture2D(shadowtex0, shadowPos.xy + offset).r > shadowPos.z) {
-                    shadows += shadowPos.w;
-                }
-            } shadows /= float(shadowSamples.length());
-        }
-    }
-
-    outdoor = shadows;
-
-    float rays = 0.0;
-    vec3 relPosRay = relPos;
-    relPosRay.xyz *= mix(1.0, 1.3, hash12(floor(gl_FragCoord.xy * 1024.0) + frameTimeCounter));
-    while (dot(relPosRay.xyz, relPosRay.xyz) > 0.25 * 0.25) {
-        relPosRay.xyz *= 0.75;
-        vec4 rayPos = getShadowPos(gbufferModelViewInverse, gbufferProjectionInverse, shadowModelView, shadowProjection, relPosRay, uv, depth, 1.0);
-        if (texture2D(shadowtex0, rayPos.xy).r > rayPos.z) {
-            rays = mix(rayPos.w, rays, exp2(length(relPosRay.xyz) * -0.0625));
-        }
-    }
-
-    float specularLight = specularLight(1.8, 0.2, sunPos, relPos, worldNormal);
-	float dirLight = mix(0.0, mix(0.0, specularLight, shadows), outdoor);
-	float torchLit = uv1.x * uv1.x * uv1.x * uv1.x * uv1.x;
-	// torchLit = mix(0.0, torchLit, smoothstep(0.95, 0.5, uv1.y * daylight));
-
-	vec3 defaultCol = vec3(1.0, 1.0, 1.0);
-	vec3 ambientLightCol = mix(mix(1.0 / vec3(AMBIENT_LIGHT_INTENSITY) + 0.3, TORCHLIT_COL, torchLit), mix(MOONLIT_COL, mix(SKYLIT_COL, SUNLIT_COL, 0.625), daylight), uv1.y);
-    // ambientLightCol = mix(vec3(0.3, 0.3, 0.3), ambientLightCol, getAO(col, 0.65));
-    float ao = getSSAO(viewPos, gbufferProjectionInverse, uv, aspectRatio, depthtex0);
-
-	vec3 lit = vec3(1.0, 1.0, 1.0);
-
-	lit *= mix(defaultCol, AMBIENT_LIGHT_INTENSITY * ambientLightCol, 1.0 - ao * 0.65);
-	lit *= mix(defaultCol, SKYLIGHT_INTENSITY * SKYLIT_COL, dirLight * daylight * max(0.5, 1.0 - rainStrength));
-	lit *= mix(defaultCol, SUNLIGHT_INTENSITY * mix(SUNLIT_COL, SUNLIT_COL_SET, duskDawn), dirLight * daylight * max(0.5, 1.0 - rainStrength));
-    //lit = mix(lit, RAY_INTENSITY * RAY_COL, rays * duskDawn * max(0.5, 1.0 - rainStrength));
-    lit *= mix(defaultCol, MOONLIGHT_INTENSITY * MOONLIT_COL, (1.0 - dirLight) * (1.0 - daylight) * max(0.5, 1.0 - rainStrength));
-    lit *= mix(defaultCol, TORCHLIGHT_INTENSITY * TORCHLIT_COL, torchLit);
-
-	albedo *= lit;
-	albedo = uncharted2ToneMap(albedo, 1.0);
-	albedo = contrastFilter(albedo, 1.2);
-
-    float rayFact = clamp((length(relPos * (duskDawn)) - near) / (far - near), 0.0, 1.0);
-    albedo = mix(albedo, RAY_COL, rays * rayFact);
-
-    vec3 fogCol = getAtmosphere(normalize(relPos), sunPos, vec3(0.4, 0.65, 1.0), skyBrightness);
-    fogCol = toneMapReinhard(fogCol);
-        
-    float fogFact = clamp((length(relPos) - near) / (far - near), 0.0, 1.0);
-
-    albedo = mix(albedo, fogCol, fogFact);
+float rays = 0.0;
+vec3 relPosRay = relPos;
+relPosRay.xyz *= mix(1.0, 1.3, hash12(floor(gl_FragCoord.xy * 2048.0) + frameTimeCounter));
+while (dot(relPosRay.xyz, relPosRay.xyz) > 0.25 * 0.25) {
+	relPosRay.xyz *= 0.75;
+	vec4 rayPos = getShadowPos(gbufferModelViewInverse, gbufferProjectionInverse, shadowModelView, shadowProjection, relPosRay, uv, depth, 1.0);
+	if (texture2D(shadowtex0, rayPos.xy).r > rayPos.z) {
+		rays = mix(rayPos.w, rays, exp2(length(relPosRay.xyz) * -0.0625));
+	}
 }
 
-	/* DRAWBUFFERS:045
-     * 0 = gcolor
+if (reflectance > 0.5 && depth < 1.0) {
+	worldNormal = getWaterWavNormal(fragPos.xz, frameTimeCounter) * getTBNMatrix(worldNormal);
+	vec3 refPos = reflect(normalize(viewPos), mat3(gbufferModelView) * worldNormal);
+	vec3 refUV = viewPos2UV(refPos, gbufferProjection);
+
+	vec3 refracted = texture2D(gcolor, refract(vec3(uv, 1.0), getWaterWavNormal(fragPos.xz, frameTimeCounter) * 0.15, 1.0).xy).rgb;
+	
+	vec3 ssr = texture2D(gcolor, refUV.xy).rgb;
+	float screenSpace = float(refUV.x > 0.0 && refUV.x < 1.0 && refUV.y > 0.0 && refUV.y < 1.0 && refUV.z > 0.0 && refUV.z < 1.0) * (1.0 - max(abs(refUV.x - 0.5), abs(refUV.y - 0.5)) * 2.0);
+
+	vec3 reflectedSky = getAtmosphere(reflect(normalize(relPos), worldNormal), shadowLitPos, vec3(0.4, 0.65, 1.0), skyBrightness);
+	reflectedSky = toneMapReinhard(reflectedSky);
+
+	vec4 clouds = renderClouds(reflect(normalize(relPos), worldNormal), cameraPosition, shadowLitPos, smoothstep(0.0, 0.25, daylight), rainStrength, frameTimeCounter);
+
+    reflectedSky = mix(albedo, mix(reflectedSky, clouds.rgb, clouds.a * 0.65), outdoor);
+
+	vec3 reflected = mix(reflectedSky, ssr, smoothstep(0.0, 0.1, screenSpace));
+	if (isEyeInWater == 1) {
+		reflected = albedo;
+	}
+
+	albedo = mix(reflected, refracted, cosTheta);
+
+	albedo += min(specularLight(10.0, 200.0, sunPos, relPos, worldNormal), 1.0) * outdoor;
+	bloom += min(specularLight(20.0, 500.0, sunPos, relPos, worldNormal), 1.0) * outdoor;
+
+	albedo = mix(albedo, RAY_COL, rayFact * 0.5);
+	albedo = mix(albedo, fogCol, fogFact);
+}
+
+	/* DRAWBUFFERS:05
+	 * 0 = gcolor
      * 1 = gdepth
      * 2 = gnormal
      * 3 = composite
@@ -226,6 +156,5 @@ if (depth == 1.0) {
      * 7 = gaux4
 	*/
 	gl_FragData[0] = vec4(albedo, 1.0); // gcolor
-    gl_FragData[1] = vec4(vec3(0.0), outdoor); // gaux1
-    gl_FragData[2] = bloom; // gaux2
+	gl_FragData[1] = bloom; // gaux2
 }

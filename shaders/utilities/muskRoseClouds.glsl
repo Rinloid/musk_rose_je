@@ -30,11 +30,11 @@ float fBM(vec2 x, const float amp, const float lower, const float upper, const f
 }
 
 float cloudMap(const vec2 pos, const float time, const float amp, const float rain, const int oct) {
-    return fBM(pos, 0.545 - amp * 0.1, mix(0.8, 0.0, rain), 0.825, time, oct);
+    return fBM(pos, 0.55 - amp * 0.1, mix(0.8, 0.0, rain), 0.825, time, oct);
 }
 
 float cloudMapShade(const vec2 pos, const float time, const float amp, const float rain, const int oct) {
-    return fBM(pos * 0.9, 0.545 - amp * 0.1, mix(0.75, 0.0, rain), 1.0, time, oct);
+    return fBM(pos * 0.9, 0.55 - amp * 0.1, mix(0.75, 0.0, rain), 1.0, time, oct);
 }
 
 vec4 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const float brightness, const float rain, const float time) {

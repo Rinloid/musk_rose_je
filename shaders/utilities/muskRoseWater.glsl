@@ -7,7 +7,7 @@ float getWaterWav(const vec2 pos, const float time) {
 	float wav = 0.0;
     vec2  p   = pos;
 
-    wav += simplexNoise(vec2(p.x * 1.4 - time * 0.4, p.y * 0.65 + time * 0.4) * 0.6) * 2.5;
+    wav += simplexNoise(vec2(p.x * 1.4 - time * 0.4, p.y * 0.65 + time * 0.4) * 0.6) * 2.0;
     wav += simplexNoise(vec2(p.x * 1.0 + time * 0.6, p.y - time * 0.75)) * 0.5;
     wav += simplexNoise(vec2(p.x * 2.2 - time * 0.3, p.y * 2.8 - time * 0.6)) * 0.25;
 

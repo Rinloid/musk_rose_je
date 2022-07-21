@@ -27,13 +27,12 @@ if (abs(col.r - col.g) > 0.001 || abs(col.g - col.b) > 0.001) {
 #ifdef ENTITY
     albedo.rgb = mix(albedo.rgb, entityColor.rgb, entityColor.a);
 #endif
-vec3 worldNormal = normal;
 
 if (waterFlag > 0.5) {
-    float cosTheta = abs(dot(normalize(relPos), worldNormal));
+    float cosTheta = abs(dot(normalize(relPos), normal));
 
     albedo.rgb = vec3(0.0, 0.15, 0.3);
-    albedo.a   = mix(1.0, 0.1, cosTheta);
+    albedo.a = mix(1.0, 0.1, cosTheta);
 }
 
 vec4 bloom = vec4(0.0);
@@ -54,7 +53,7 @@ float reflectance = waterFlag > 0.5 ? 1.0 : 0.0;
      * 7 = gaux4
 	*/
 	gl_FragData[0] = albedo; // gcolor
-    gl_FragData[1] = vec4(worldNormal, reflectance); // gnormal
+    gl_FragData[1] = vec4(normal, reflectance); // gnormal
     gl_FragData[2] = vec4(uv0, uv1); // gaux1
     gl_FragData[3] = bloom; // gaux2
 }

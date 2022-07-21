@@ -1,117 +1,43 @@
 #version 120
 
 uniform sampler2D gcolor;
-uniform sampler2D depthtex0;
-uniform sampler2D gnormal;
-uniform sampler2D gaux1;
+uniform sampler2D depthtex1;
 uniform sampler2D gaux2;
-uniform mat4 gbufferModelView, gbufferModelViewInverse;
-uniform mat4 gbufferProjection, gbufferProjectionInverse;
-uniform float frameTimeCounter;
-uniform float rainStrength;
-uniform float far, near;
+uniform float centerDepthSmooth;
+uniform float viewWidth, viewHeight;
 uniform vec3 cameraPosition;
-uniform int isEyeInWater;
+uniform vec3 previousCameraPosition;
 
 varying vec2 uv;
-varying vec3 shadowLitPos, sunPos, moonPos;
 
-#include "utilities/muskRoseWater.glsl"
-#include "utilities/muskRoseSky.glsl"
-#include "utilities/muskRoseClouds.glsl"
-#include "utilities/muskRoseSpecular.glsl"
+#include "utilities/muskRoseBlur.glsl"
 
-/*
- ** Generate a TBN matrix without tangent and binormal.
-*/
-mat3 getTBNMatrix(const vec3 normal) {
-    vec3 T = vec3(abs(normal.y) + normal.z, 0.0, normal.x);
-    vec3 B = cross(T, normal);
-    vec3 N = vec3(-normal.x, normal.y, normal.z);
- 
-    return mat3(T, B, N);
-}
+#define ENABLE_DOF
+#define ENABLE_BLOOM
 
-vec4 getViewPos(const mat4 projInv, const vec2 uv, const float depth) {
-	vec4 viewPos = projInv * vec4(vec3(uv, depth) * 2.0 - 1.0, 1.0);
-
-	return viewPos / viewPos.w;
-}
-
-vec4 getRelPos(const mat4 modelViewInv, const mat4 projInv, const vec2 uv, const float depth) {
-	vec4 relPos = modelViewInv * getViewPos(projInv, uv, depth);
-	
-	return relPos / relPos.w;
-}
-
-vec3 uv2ViewPos(const vec2 uv, const mat4 projInv, const float depth) {
-    vec3 pos = vec3(uv, depth);
-	vec4 iProjDiag = vec4(projInv[0].x, projInv[1].y, projInv[2].zw);
-	vec3 p3 = pos * 2.0 - 1.0;
-    vec4 view = iProjDiag * p3.xyzz + projInv[3];
-
-    return view.xyz / view.w;
-}
-
-vec3 viewPos2UV(const vec3 viewPos, const mat4 proj) {
-    vec4 clipSpace = proj * vec4(viewPos, 1.0);
-	
-    return ((clipSpace.xyz / clipSpace.w) * 0.5 + 0.5).xyz;
-}
+const float centerDepthHalflife = 2.0; // [0.0 1.0 2.0 3.0 4.0 5.0]
+const int steps = 6;
 
 void main() {
 vec3 albedo = texture2D(gcolor, uv).rgb;
 vec4 bloom = texture2D(gaux2, uv);
-float depth = texture2D(depthtex0, uv).r;
-vec3 worldNormal = texture2D(gnormal, uv).rgb;
-float reflectance = texture2D(gnormal, uv).a;
-float outdoor = texture2D(gaux1, uv).a;
-vec3 viewPos = getViewPos(gbufferProjectionInverse, uv, depth).xyz;
-vec3 relPos = getRelPos(gbufferModelViewInverse, gbufferProjectionInverse, uv, depth).xyz;
-vec3 fragPos = relPos + cameraPosition;
-float daylight = sin(sunPos.y);
-float duskDawn = min(smoothstep(0.0, 0.3, daylight), smoothstep(0.5, 0.3, daylight));
-float skyBrightness = mix(0.5, 2.0, smoothstep(0.0, 0.1, daylight));
-float cosTheta = abs(dot(normalize(relPos), worldNormal));
+float depth = texture2D(depthtex1, uv).r;
+vec2 screenResolution = vec2(viewWidth, viewHeight);
+vec2 pixelSize = 1.0 / screenResolution;
+float centreDepth = centerDepthSmooth;
+float unfocused = smoothstep(0.0, 0.075, abs(depth - centreDepth));
 
-vec3 fogCol = getAtmosphere(normalize(relPos), sunPos, vec3(0.4, 0.65, 1.0), skyBrightness);
-fogCol = toneMapReinhard(fogCol);
-	
-float fogFact = clamp((length(relPos) - near) / (far - near), 0.0, 1.0);
+vec3 blurred = vec3(0.0);
 
-if (reflectance > 0.5 && depth < 1.0) {
-	worldNormal = getWaterWavNormal(fragPos.xz, frameTimeCounter) * getTBNMatrix(worldNormal);
-	vec3 refPos = reflect(normalize(viewPos), mat3(gbufferModelView) * worldNormal);
-	vec3 refUV = viewPos2UV(refPos, gbufferProjection);
+#ifdef ENABLE_DOF
+	if (unfocused > 0.0 && depth > 0.8) {
+		blurred += blur(gcolor, uv, unfocused * 0.5);
 
-	vec3 refracted = texture2D(gcolor, refract(vec3(uv, 1.0), getWaterWavNormal(fragPos.xz, frameTimeCounter) * 0.1, 1.0).xy).rgb;
-	
-	vec3 ssr = texture2D(gcolor, refUV.xy).rgb;
-	float screenSpace = float(refUV.x > 0.0 && refUV.x < 1.0 && refUV.y > 0.0 && refUV.y < 1.0 && refUV.z > 0.0 && refUV.z < 1.0) * (1.0 - max(abs(refUV.x - 0.5), abs(refUV.y - 0.5)) * 2.0);
-
-	vec3 reflectedSky = getAtmosphere(reflect(normalize(relPos), worldNormal), sunPos, vec3(0.4, 0.65, 1.0), skyBrightness);
-	reflectedSky = toneMapReinhard(reflectedSky);
-
-	vec4 clouds = renderClouds(reflect(normalize(relPos), worldNormal), cameraPosition, sunPos, smoothstep(0.0, 0.25, daylight), rainStrength, frameTimeCounter);
-
-    reflectedSky = mix(reflectedSky, clouds.rgb, clouds.a * 0.65);
-
-	vec3 reflected = mix(reflectedSky, ssr, smoothstep(0.0, 0.1, screenSpace));
-	if (isEyeInWater == 1) {
-		reflected = albedo;
+		albedo = blurred;
 	}
+#endif
 
-	refracted = mix(refracted, reflected, fogFact * 2.0);
-
-	albedo = mix(reflected, refracted, cosTheta);
-
-	albedo += min(specularLight(10.0, 200.0, sunPos, relPos, worldNormal), 1.0);
-	bloom += min(specularLight(10.0, 500.0, sunPos, relPos, worldNormal), 1.0);
-
-	albedo = mix(albedo, fogCol, fogFact);
-}
-
-	/* DRAWBUFFERS:05
+	/* DRAWBUFFERS:0
 	 * 0 = gcolor
      * 1 = gdepth
      * 2 = gnormal
@@ -122,5 +48,4 @@ if (reflectance > 0.5 && depth < 1.0) {
      * 7 = gaux4
 	*/
 	gl_FragData[0] = vec4(albedo, 1.0); // gcolor
-	gl_FragData[1] = bloom; // gaux2
 }

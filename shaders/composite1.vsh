@@ -1,17 +1,9 @@
 #version 120
 
-uniform mat4 gbufferModelView, gbufferModelViewInverse;
-uniform mat4 gbufferProjection, gbufferProjectionInverse;
-uniform vec3 shadowLitPosition, sunPosition, moonPosition;
-
 varying vec2 uv;
-varying vec3 shadowLitPos, sunPos, moonPos;
 
 void main() {
 uv = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
-shadowLitPos = normalize(mat3(gbufferModelViewInverse) * mat3(gl_ModelViewMatrix) * shadowLitPosition);
-sunPos = normalize(mat3(gbufferModelViewInverse) * mat3(gl_ModelViewMatrix) * sunPosition);
-moonPos = normalize(mat3(gbufferModelViewInverse) * mat3(gl_ModelViewMatrix) * moonPosition);
 
 	gl_Position = ftransform();
 }
