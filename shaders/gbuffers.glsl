@@ -40,7 +40,12 @@ if (bloomFlag > 0.5) {
     bloom = vec4(albedo.rgb, 1.0);
 }
 
-float reflectance = waterFlag > 0.5 ? 1.0 : 0.0;
+float reflectance =
+#ifdef TERRAIN
+    waterFlag > 0.5 ? 1.0 : 0.0;
+#else
+    0.0;
+#endif
 
 	/* DRAWBUFFERS:0245
 	 * 0 = gcolor
@@ -84,11 +89,11 @@ col = gl_Color;
 
 normal = normalize(mat3(gbufferModelViewInverse) * gl_NormalMatrix * gl_Normal);
 
-viewPos  = (gl_ModelViewMatrix * gl_Vertex).xyz;
+viewPos = (gl_ModelViewMatrix * gl_Vertex).xyz;
 relPos  = (gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex).xyz;
 fragPos = relPos + cameraPosition;
 
-#ifndef ENTITY
+#ifdef TERRAIN
 	waterFlag = int(mc_Entity.x) == 10000 ? 1.0 : 0.0;
     bloomFlag = int(mc_Entity.x) == 10001 ? 1.0 : 0.0;
 #else

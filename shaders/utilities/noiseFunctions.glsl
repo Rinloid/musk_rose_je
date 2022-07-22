@@ -15,7 +15,7 @@ float hash13(vec3 p3) {
     return fract((p3.x + p3.y) * p3.z);
 }
 vec2 hash22(vec2 p) {
-    p = vec2(dot(p,vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+    p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
     
     return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);
 }

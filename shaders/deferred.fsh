@@ -151,7 +151,7 @@ if (diffuse > 0.0 && bool(step(0.5, uv1.y))) {
     if (shadowPos.w > 0.0) {
         for (int i = 0; i < shadowSamples.length(); i++) {
             vec2 offset = vec2(shadowSamples[i] / float(shadowMapResolution));
-            if (texture2D(shadowtex0, shadowPos.xy + offset + hash12(floor(uv * 2048.0) + float(i / shadowSamples.length())) * 0.0005).r > shadowPos.z) {
+            if (texture2D(shadowtex0, shadowPos.xy + offset * 0.5 + hash12(floor(uv * 2048.0) + float(i / shadowSamples.length())) * 0.00025).r > shadowPos.z) {
                 shadows += shadowPos.w;
                 colouredShadows += texture2D(shadowcolor0, shadowPos.xy).rgb * shadowPos.w;
             }
@@ -159,7 +159,6 @@ if (diffuse > 0.0 && bool(step(0.5, uv1.y))) {
           colouredShadows /= float(shadowSamples.length());
     }
 }
-float outdoor = shadows;
 
 float rays = 0.0;
 vec3 relPosRay = relPos;
@@ -204,7 +203,9 @@ if (depth == 1.0) {
 
 	albedo *= lit;
 	albedo = uncharted2ToneMap(albedo, 1.0);
-	albedo = contrastFilter(albedo, 1.2);
+	albedo = contrastFilter(albedo, 1.45);
+
+    albedo = pow(albedo * albedo, vec3(1.0 / 2.2));
 
     float rayFact = clamp((length(relPos * (duskDawn * 4.0)) - near) / (far - near), 0.0, 1.0);
     albedo = mix(albedo, RAY_COL, rays * rayFact * 0.5);
