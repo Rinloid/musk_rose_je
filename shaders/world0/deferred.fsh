@@ -184,7 +184,7 @@ if (depth == 1.0) {
 
     albedo = mix(albedo, clouds.rgb, clouds.a * 0.65);
 } else if (reflectance < 0.5) {
-    float specular = specularLight(1.8, 0.2, shadowLitPos, relPos, worldNormal);
+    float specular = specularLight(1.8, 1.2, shadowLitPos, relPos, worldNormal);
 	float dirLight = mix(0.0, specular, shadows);
 	float torchLit = uv1.x * uv1.x * uv1.x * uv1.x * uv1.x;
 	// torchLit = mix(0.0, torchLit, smoothstep(0.95, 0.5, uv1.y * daylight));
@@ -219,14 +219,14 @@ if (depth == 1.0) {
     float fogFact = clamp((length(relPos) - near) / (far - near), 0.0, 1.0);
 
     albedoUnderwater = albedo;
-    albedoUnderwater *= mix(defaultCol, lit, getWaterWav(fragPos.xz, frameTimeCounter) * 0.5);
+    albedoUnderwater *= mix(defaultCol, lit, getWaterWav(fragPos.xz, frameTimeCounter) * 0.2);
 
     albedoUnderwater *= mix(vec3(1.0), vec3(0.0, 0.5, 0.9), clamp(fogFact * 10.0, 0.0, 1.0) * 0.625);
 
     if (isEyeInWater == 0) {
         albedo = mix(albedo, fogCol, fogFact);
     } else if (isEyeInWater == 1) {
-        albedo *= mix(vec3(1.0), vec3(0.0, 0.5, 0.9), clamp(fogFact * 10.0, 0.0, 1.0) * 0.625);
+        albedo *= mix(vec3(1.0), vec3(0.0, 0.5, 0.9), clamp(fogFact * 10.0, 0.0, 1.0));
     }
 }
 

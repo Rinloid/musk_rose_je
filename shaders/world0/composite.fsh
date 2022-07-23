@@ -141,15 +141,7 @@ fogCol = mix(fogColor, fogCol, uv1.y);
 float fogFact = clamp((length(relPos) - near) / (far - near), 0.0, 1.0);
 float rayFact = clamp((length(relPos * (duskDawn * 4.0)) - near) / (far - near), 0.0, 1.0);
 
-float outdoor = 0.0;
-if (diffuse > 0.0) {
-    vec4 shadowPos = getShadowPos(gbufferModelViewInverse, gbufferProjectionInverse, shadowModelView, shadowProjection, relPos, uv, depth, diffuse);
-    if (shadowPos.w > 0.0) {
-		if (texture2D(shadowtex0, shadowPos.xy + hash22(floor(uv * 2048.0)) * 0.0005).r > shadowPos.z) {
-			outdoor += shadowPos.w;
-		}
-    }
-}
+float outdoor = smoothstep(0.92, 0.95, uv1.y);
 
 float rays = 0.0;
 vec3 relPosRay = relPos;
@@ -172,23 +164,11 @@ if (reflectance > 0.5 && depth < 1.0) {
 
 	float screenSpace = float(rayPosHit.x > 0.0 && rayPosHit.x < 1.0 && rayPosHit.y > 0.0 && rayPosHit.y < 1.0 && refUV.z > 0.0 && refUV.z < 1.0) * (1.0 - max(abs(rayPosHit.x - 0.5), abs(rayPosHit.y - 0.5)) * 2.0);
 
-	vec3 reflectedSky = vec3(0.0);
-	vec4 clouds = vec4(0.0);
-	
-	if (!bool(screenSpace * (1.0 - outdoor))) {
-		reflectedSky = getAtmosphere(reflect(normalize(relPos), worldNormal), shadowLitPos, vec3(0.4, 0.65, 1.0), skyBrightness);
-		reflectedSky = toneMapReinhard(reflectedSky);
-		clouds = renderClouds(reflect(normalize(relPos), worldNormal), cameraPosition, shadowLitPos, smoothstep(0.0, 0.25, daylight), rainStrength, frameTimeCounter);
-
-		reflectedSky = mix(albedo, mix(albedo, mix(reflectedSky, clouds.rgb, clouds.a * 0.65), outdoor), 1.0 - (screenSpace * (1.0 - outdoor)));
-	}
-
-
-	vec3 ssr = reflectedSky;
-	if (rayPosHit.b > 0.5 && dot(texture2D(gcolor, rayPosHit.xy + hash22(floor(uv * 2048.0)) * 0.002).rgb, vec3(0.22, 0.707, 0.071)) > 0.1) {
+	vec3 ssr = albedo;
+	if (rayPosHit.b > 0.5) {
 		ssr = texture2D(gcolor, rayPosHit.xy + hash22(floor(uv * 2048.0)) * 0.002).rgb;
 	}
-	vec3 reflected = mix(reflectedSky, ssr, step(0.01, screenSpace));
+	vec3 reflected = mix(albedo, ssr, step(0.01, screenSpace));
 
 	albedo = mix(reflected, refracted, cosTheta);
 
