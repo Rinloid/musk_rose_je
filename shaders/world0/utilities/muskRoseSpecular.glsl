@@ -1,3 +1,6 @@
+#if !defined SPECULAR_INCLUDED
+#define SPECULAR_INCLUDED 1
+
 float specularLight(const float fresnel, const float shininess, const vec3 lightDir, const vec3 relPos, const vec3 normal) {
     vec3  viewDir   = -normalize(relPos);
     vec3  halfDir   = normalize(viewDir + lightDir);
@@ -12,5 +15,12 @@ float specularLight(const float fresnel, const float shininess, const vec3 light
     viewAngle = viewAngle * viewAngle * viewAngle * viewAngle;
     float viewCoeff = fresnel + (1.0 - fresnel) * viewAngle;
 
-    return max(0.0, specular * viewCoeff * 0.03);
+	#ifdef ENABLE_SPECULAR
+        return max(0.0, specular * viewCoeff * 0.03);
+    #else
+        return 0.0;
+    #endif
+
 }
+
+#endif /* !defined SPECULAR_INCLUDED */

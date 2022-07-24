@@ -1,3 +1,6 @@
+#if !defined SHADOW_INCLUDED
+#define SHADOW_INCLUDED 1
+
 /*
  ** Shadow distortion based on Shadow Tutorial.  Visit shaderLABS for details.
  ** https://discord.gg/KJ2SXNkKqS
@@ -29,3 +32,5 @@ const vec2[8] shadowSamples = vec2[8] (
     vec2(0.10938630, 0.6212762),
     vec2(-0.9064262, -0.118388)
 );
+
+#endif /* !defined SHADOW_INCLUDED */

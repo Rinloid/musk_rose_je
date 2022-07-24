@@ -22,6 +22,7 @@ uniform int isEyeInWater;
 varying vec2 uv;
 varying vec3 shadowLitPos, sunPos, moonPos;
 
+#include "utilities/settings.glsl"
 #include "utilities/muskRoseWater.glsl"
 #include "utilities/muskRoseSky.glsl"
 #include "utilities/muskRoseClouds.glsl"
@@ -115,8 +116,6 @@ vec3 getRayTraceFactor(const vec3 viewPos, const vec3 reflectPos) {
     return rayPosHit;
 }
 
-#define RAY_COL vec3(1.0, 0.85, 0.63)
-
 void main() {
 vec3 albedo = texture2D(gcolor, uv).rgb;
 vec4 bloom = texture2D(gaux2, uv);
@@ -134,7 +133,7 @@ float skyBrightness = mix(0.7, 2.0, smoothstep(0.0, 0.1, daylight));
 float cosTheta = abs(dot(normalize(relPos), worldNormal));
 float diffuse = max(0.0, dot(shadowLitPos, worldNormal));
 
-vec3 fogCol = getAtmosphere(normalize(relPos), shadowLitPos, vec3(0.4, 0.65, 1.0), skyBrightness);
+vec3 fogCol = getAtmosphere(normalize(relPos), shadowLitPos, SKY_COL, skyBrightness);
 fogCol = toneMapReinhard(fogCol);
 fogCol = mix(fogColor, fogCol, uv1.y);
 	
@@ -154,25 +153,36 @@ while (dot(relPosRay.xyz, relPosRay.xyz) > 0.25 * 0.25) {
 	}
 }
 
-if (reflectance > 0.5 && depth < 1.0) {
-	worldNormal = normalize(getWaterWavNormal(fragPos.xz, frameTimeCounter) * getTBNMatrix(worldNormal));
-	vec3 refPos = reflect(normalize(viewPos), mat3(gbufferModelView) * worldNormal);
-	vec3 refUV = viewPos2UV(refPos, gbufferProjection);
-	vec3 rayPosHit = getRayTraceFactor(viewPos, refPos);
+float fresnel = 2.0;
+float shininess = 3.0;
 
-	vec3 refracted = texture2D(gaux3, refract(vec3(uv, 1.0), getWaterWavNormal(fragPos.xz, frameTimeCounter) * 0.12, 1.0).xy).rgb;
+if (depth < 1.0) {
+	if (reflectance > 0.5) {
+		worldNormal = normalize(getWaterWavNormal(fragPos.xz, frameTimeCounter) * getTBNMatrix(worldNormal));
+		vec3 refPos = reflect(normalize(viewPos), mat3(gbufferModelView) * worldNormal);
+		vec3 refUV = viewPos2UV(refPos, gbufferProjection);
+		vec3 rayPosHit = getRayTraceFactor(viewPos, refPos);
 
-	float screenSpace = float(rayPosHit.x > 0.0 && rayPosHit.x < 1.0 && rayPosHit.y > 0.0 && rayPosHit.y < 1.0 && refUV.z > 0.0 && refUV.z < 1.0) * (1.0 - max(abs(rayPosHit.x - 0.5), abs(rayPosHit.y - 0.5)) * 2.0);
+		vec3 refracted = texture2D(gaux3, uv).rgb;
+		#ifdef ENABLE_REFRACTION
+			refracted = texture2D(gaux3, refract(vec3(uv, 1.0), getWaterWavNormal(fragPos.xz, frameTimeCounter) * 0.1, 1.0).xy).rgb;
+		#endif
 
-	vec3 ssr = albedo;
-	if (rayPosHit.b > 0.5) {
-		ssr = texture2D(gcolor, rayPosHit.xy + hash22(floor(uv * 2048.0)) * 0.002).rgb;
+		vec3 ssr = albedo;
+		#ifdef ENABLE_SSR
+			if (rayPosHit.b > 0.5) {
+				ssr = texture2D(gcolor, rayPosHit.xy + hash22(floor(uv * 2048.0)) * 0.002).rgb;
+			}
+		#endif
+
+		vec3 reflected = ssr;
+		albedo = mix(reflected, refracted, cosTheta * FRESNEL_RATIO);
+
+		fresnel   = 10.0;
+		shininess = 200.0;
 	}
-	vec3 reflected = mix(albedo, ssr, step(0.01, screenSpace));
 
-	albedo = mix(reflected, refracted, cosTheta);
-
-	albedo += min(specularLight(10.0, 200.0, sunPos, relPos, worldNormal), 1.0) * outdoor;
+	albedo += min(specularLight(fresnel, shininess, sunPos, relPos, worldNormal), 1.0) * outdoor;
 
 	albedo = mix(albedo, RAY_COL, rayFact * 0.5);
 	albedo = mix(albedo, fogCol, fogFact);

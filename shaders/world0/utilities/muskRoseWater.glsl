@@ -1,3 +1,6 @@
+#if !defined WATER_INCLUDED
+#define WATER_INCLUDED 1
+
 #include "noiseFunctions.glsl"
 
 /*
@@ -14,7 +17,12 @@ float getWaterWav(const vec2 pos, const float time) {
     /*
      ** The scale should become very small?
     */
-	return wav * 0.005;
+
+    #ifdef ENABLE_WATER_WAVES
+	    return wav * 0.005;
+    #else
+        return 0.0;
+    #endif
 }
 
 /*
@@ -31,3 +39,5 @@ vec3 getWaterWavNormal(const vec2 pos, const float time) {
     
 	return normalize(vec3(delta / texStep, 1.0));
 }
+
+#endif /* !defined WATER_INCLUDED */

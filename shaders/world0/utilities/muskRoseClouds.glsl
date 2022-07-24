@@ -1,3 +1,6 @@
+#if !defined CLOUDS_INCLUDED
+#define CLOUDS_INCLUDED 1
+
 uniform sampler2D noisetex;
 
 const int noiseTextureResolution = 256;
@@ -42,7 +45,7 @@ vec4 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const fl
     const float cloudHeight = 256.0;
     const int cloudOctaves = 6;
     const int cloudSteps = 40;
-    const float stepSize = 0.01;
+    const float stepSize = 0.012;
     const int raySteps = 2;
     const float rayStepSize = 0.18;
     
@@ -57,20 +60,23 @@ vec4 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const fl
             cloudPos *= 0.005;
 
             clouds.a += cloudMap(cloudPos, time, amp, rain, cloudOctaves);
+            
+            #ifdef ENABLE_CLOUD_SHADING
+                vec3 rayStep = normalize(sunPos - pos) * rayStepSize;
+                vec3 rayPos = pos;
+                float inside = 0.0;
+                for (int i = 0; i < raySteps; i++) {
+                    rayPos += rayStep;
+                    float rayHeight = cloudMapShade(cloudPos, time, amp, rain, cloudOctaves);
+                    
+                    inside += max(0.0, rayHeight - (rayPos.y - pos.y));
+                } inside /= float(raySteps);
 
-            vec3 rayStep = normalize(sunPos - pos) * rayStepSize;
-            vec3 rayPos = pos;
-            float inside = 0.0;
-            for (int i = 0; i < raySteps; i++) {
-                rayPos += rayStep;
-                float rayHeight = cloudMapShade(cloudPos, time, amp, rain, cloudOctaves);
-                
-                inside += max(0.0, rayHeight - (rayPos.y - pos.y));
-            } inside /= float(raySteps);
 
+                clouds.rgb = mix(clouds.rgb + 0.2 / float(cloudSteps) * brightness, max(vec3(0.0), clouds.rgb - 0.3 / float(cloudSteps) * brightness), inside);
+            #endif
             amp += 1.0 / float(cloudSteps);
 
-            clouds.rgb = mix(clouds.rgb + 0.2 / float(cloudSteps) * brightness, max(vec3(0.0), clouds.rgb - 0.3 / float(cloudSteps) * brightness), inside);
         } clouds.a /= float(cloudSteps);
     }
 
@@ -80,6 +86,11 @@ vec4 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const fl
     // clouds.a = smoothstep(0.0, 0.5, clouds.a);
     // clouds.a = pow(clouds.a, 1.2);
 
-
-    return clouds;
+    #ifdef ENABLE_CLOUDS
+        return clouds;
+    #else
+        return vec4(0.0);
+    #endif
 }
+
+#endif /* !defined CLOUDS_INCLUDED */

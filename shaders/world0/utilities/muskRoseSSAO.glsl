@@ -1,7 +1,7 @@
-#ifndef SSAO_INCLUDED
+#if !defined SSAO_INCLUDED
 #define SSAO_INCLUDED 1
 
-const vec2 occlutionSamples[25] = vec2[25] (
+const vec2 occlusionSamples[25] = vec2[25] (
     vec2(-0.48945, -0.358),
 	vec2(-0.17171, 0.6272),
 	vec2(-0.47094, -0.017),
@@ -34,7 +34,7 @@ const vec2 occlutionSamples[25] = vec2[25] (
  ** See: https://github.com/kayru/dssdo
 */
 float getSSAO(const vec3 viewPos, const mat4 projInv, const vec2 uv, const float aspectRatio, const sampler2D depthTex) {
-	const int samples = occlutionSamples.length();
+	const int samples = occlusionSamples.length();
 	const float aoWeight = 1.0;
 	const float bias = 0.02;
     
@@ -43,7 +43,7 @@ float getSSAO(const vec3 viewPos, const mat4 projInv, const vec2 uv, const float
 	float radius = 0.03 / (viewPos.z - bias);
 
 	for (int i = 0; i < samples; i++) {
-	    vec2 offset = length(occlutionSamples[i]) * radius * vec2(1.0, aspectRatio) * normalize(occlutionSamples[i]);
+	    vec2 offset = length(occlusionSamples[i]) * radius * vec2(1.0, aspectRatio) * normalize(occlusionSamples[i]);
 
 		vec3 t0 = uv2ViewPos(uv + offset, projInv, texture2D(depthTex, uv + offset).r);
         t0.z -= bias;
@@ -60,4 +60,4 @@ float getSSAO(const vec3 viewPos, const mat4 projInv, const vec2 uv, const float
 	return ssao;
 }
 
-#endif // !SSAO_INCLUDED
+#endif /* !defined SSAO_INCLUDED */

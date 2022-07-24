@@ -1,3 +1,11 @@
+#if !defined SKY_INCLUDED
+#define SKY_INCLUDED 1
+
+/*
+ ** Atmoshpere based on one by robobo1221.
+ ** See: https://www.shadertoy.com/view/Ml2cWG
+*/
+
 vec3 getAbsorption(const vec3 pos, const float posY, const float brightness) {
 	vec3 absorption = pos * -posY;
 	absorption = exp2(absorption) * brightness;
@@ -49,3 +57,5 @@ vec3 toneMapReinhard(const vec3 color) {
 
     return result;
 }
+
+#endif /* !defined SKY_INCLUDED */

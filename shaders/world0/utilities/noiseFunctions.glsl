@@ -1,6 +1,10 @@
-/** Hash from "Hahs without Sine"
+#if !defined NOISE_INCLUDED
+#define NOISE_INCLUDED 1
+
+/*
+ ** Hash from "Hahs without Sine"
  ** Author: David Hoskins
- ** https://www.shadertoy.com/view/4djSRW
+ ** See: https://www.shadertoy.com/view/4djSRW
 */
 float hash12(vec2 p) {
 	vec3 p3  = fract(vec3(p.xyx) * .1031);
@@ -88,3 +92,5 @@ float simplexNoise(vec2 v) {
     
     return 130.0 * dot(m, g);
 }
+
+#endif /* !defined NOISE_INCLUDED */

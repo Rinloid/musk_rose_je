@@ -21,6 +21,7 @@ varying vec3 fragPos;
 flat varying float waterFlag;
 flat varying float bloomFlag;
 
+#include "utilities/settings.glsl"
 #include "utilities/muskRoseWater.glsl"
 #include "utilities/muskRoseSky.glsl"
 #include "utilities/muskRoseClouds.glsl"
@@ -64,16 +65,18 @@ if (waterFlag > 0.5) {
 
 	vec3 reflectedSky = vec3(0.0);
 	vec4 clouds = vec4(0.0);
-	
-	if (!bool(1.0 - outdoor) && isEyeInWater == 0) {
-		reflectedSky = getAtmosphere(reflect(normalize(relPos), worldNormal), shadowLitPos, vec3(0.4, 0.65, 1.0), skyBrightness);
-		reflectedSky = toneMapReinhard(reflectedSky);
-		clouds = renderClouds(reflect(normalize(relPos), worldNormal), cameraPosition, shadowLitPos, smoothstep(0.0, 0.25, daylight), rainStrength, frameTimeCounter);
 
-		reflectedSky = mix(albedo.rgb, mix(albedo.rgb, mix(reflectedSky, clouds.rgb, clouds.a * 0.65), outdoor), 1.0 - (1.0 - outdoor));
-	}
+    #ifdef ENABLE_SKY_REFLECTION
+        if (!bool(1.0 - outdoor) && isEyeInWater == 0) {
+            reflectedSky = getAtmosphere(reflect(normalize(relPos), worldNormal), shadowLitPos, SKY_COL, skyBrightness);
+            reflectedSky = toneMapReinhard(reflectedSky);
+            clouds = renderClouds(reflect(normalize(relPos), worldNormal), cameraPosition, shadowLitPos, smoothstep(0.0, 0.25, daylight), rainStrength, frameTimeCounter);
 
-    albedo.rgb = reflectedSky;
+            reflectedSky = mix(albedo.rgb, mix(albedo.rgb, mix(reflectedSky, clouds.rgb, clouds.a * 0.65), outdoor), 1.0 - (1.0 - outdoor));
+        }
+
+        albedo.rgb = reflectedSky;
+    #endif
 }
 
 vec4 bloom = vec4(0.0);

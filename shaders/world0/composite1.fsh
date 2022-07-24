@@ -13,10 +13,8 @@ varying vec2 uv;
 #include "utilities/muskRoseBlur.glsl"
 
 #define ENABLE_DOF
-#define ENABLE_BLOOM
 
 const float centerDepthHalflife = 2.0; // [0.0 1.0 2.0 3.0 4.0 5.0]
-const int steps = 6;
 
 void main() {
 vec3 albedo = texture2D(gcolor, uv).rgb;

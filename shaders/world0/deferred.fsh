@@ -22,6 +22,7 @@ uniform int isEyeInWater;
 varying vec2 uv;
 varying vec3 shadowLitPos, sunPos, moonPos;
 
+#include "utilities/settings.glsl"
 #include "utilities/muskRoseWater.glsl"
 #include "utilities/muskRoseSky.glsl"
 #include "utilities/muskRoseClouds.glsl"
@@ -109,23 +110,9 @@ vec3 contrastFilter(vec3 color, float contrast) {
 }
 
 const float ambientOcclusionLevel = 1.0;
-const float sunPathRotation = -40.0;
-const int shadowMapResolution = 1024;
+const float sunPathRotation = -40.0; // [-50  -45 -40  -35 -30 -25 -20 -15 -10 -5 0 5 10 15 20 25 30 35 40 45 50]
+const int shadowMapResolution = 1024; // [512 1024 2048 4096]
 const float shadowDistance = 512.0; 
-
-#define AMBIENT_LIGHT_INTENSITY 30.0
-#define SKYLIGHT_INTENSITY 2.0
-#define SUNLIGHT_INTENSITY 50.0
-#define RAY_INTENSITY 2.0
-#define MOONLIGHT_INTENSITY 5.0
-#define TORCHLIGHT_INTENSITY 2.0
-
-#define SKYLIT_COL vec3(0.9, 0.98, 1.0)
-#define SUNLIT_COL vec3(1.0, 0.9, 0.75)
-#define SUNLIT_COL_SET vec3(1.0, 0.60, 0.2)
-#define RAY_COL vec3(1.0, 0.85, 0.63)
-#define TORCHLIT_COL vec3(1.0, 0.65, 0.3)
-#define MOONLIT_COL vec3(0.65, 0.65, 1.0)
 
 void main() {
 vec3 albedo = texture2D(gcolor, uv).rgb;
@@ -147,20 +134,21 @@ float skyBrightness = mix(0.7, 2.0, smoothstep(0.0, 0.1, daylight));
 float diffuse = max(0.0, dot(shadowLitPos, worldNormal));
 
 float shadows = 0.0;
-vec3 colouredShadows = vec3(0.0);
-if (diffuse > 0.0 && bool(step(0.5, uv1.y))) {
-    vec4 shadowPos = getShadowPos(gbufferModelViewInverse, gbufferProjectionInverse, shadowModelView, shadowProjection, relPos, uv, depth, diffuse);
-    if (shadowPos.w > 0.0) {
-        for (int i = 0; i < shadowSamples.length(); i++) {
-            vec2 offset = vec2(shadowSamples[i] / float(shadowMapResolution));
-            if (texture2D(shadowtex0, shadowPos.xy + offset * 0.5 + hash12(floor(uv * 2048.0) + float(i / shadowSamples.length())) * 0.00025).r > shadowPos.z) {
-                shadows += shadowPos.w;
-                colouredShadows += texture2D(shadowcolor0, shadowPos.xy).rgb * shadowPos.w;
-            }
-        } shadows /= float(shadowSamples.length());
-          colouredShadows /= float(shadowSamples.length());
+#ifndef BEDROCK_SHADOWS
+    if (diffuse > 0.0 && bool(step(0.5, uv1.y))) {
+        vec4 shadowPos = getShadowPos(gbufferModelViewInverse, gbufferProjectionInverse, shadowModelView, shadowProjection, relPos, uv, depth, diffuse);
+        if (shadowPos.w > 0.0) {
+            for (int i = 0; i < shadowSamples.length(); i++) {
+                vec2 offset = vec2(shadowSamples[i] / float(shadowMapResolution));
+                if (texture2D(shadowtex0, shadowPos.xy + offset * 0.5 + hash12(floor(uv * 2048.0) + float(i / shadowSamples.length())) * 0.00025).r > shadowPos.z) {
+                    shadows += shadowPos.w;
+                }
+            } shadows /= float(shadowSamples.length());
+        }
     }
-}
+#else
+    shadows = smoothstep(0.95, 0.96, uv1.y);
+#endif
 
 float rays = 0.0;
 vec3 relPosRay = relPos;
@@ -177,20 +165,23 @@ if (depth == 1.0) {
     vec3 skyPos = normalize(relPos);
     vec2 cloudPos = skyPos.xz / skyPos.y;
 
-	albedo = getAtmosphere(skyPos, shadowLitPos, vec3(0.4, 0.65, 1.0), skyBrightness);
+	albedo = getAtmosphere(skyPos, shadowLitPos, SKY_COL, skyBrightness);
 	albedo = toneMapReinhard(albedo);
 
     vec4 clouds = renderClouds(skyPos, cameraPosition, shadowLitPos, smoothstep(0.0, 0.25, daylight), rainStrength, frameTimeCounter);
 
     albedo = mix(albedo, clouds.rgb, clouds.a * 0.65);
 } else if (reflectance < 0.5) {
-    float specular = specularLight(1.8, 1.2, shadowLitPos, relPos, worldNormal);
+    float specular = specularLight(1.8, 0.02, shadowLitPos, relPos, worldNormal);
+    #ifndef ENABLE_SPECULAR
+        specular = diffuse * 0.1;
+    #endif
 	float dirLight = mix(0.0, specular, shadows);
 	float torchLit = uv1.x * uv1.x * uv1.x * uv1.x * uv1.x;
 	// torchLit = mix(0.0, torchLit, smoothstep(0.95, 0.5, uv1.y * daylight));
 
 	vec3 defaultCol = vec3(1.0, 1.0, 1.0);
-	vec3 ambientLightCol = mix(mix(1.0 / vec3(AMBIENT_LIGHT_INTENSITY) + 0.4, TORCHLIT_COL, torchLit), mix(MOONLIT_COL, mix(SKYLIT_COL, SUNLIT_COL, 0.625), daylight), uv1.y);
+	vec3 ambientLightCol = mix(mix(1.0 / vec3(AMBIENT_LIGHT_INTENSITY) + 0.34, TORCHLIT_COL, torchLit), mix(MOONLIT_COL, mix(SKYLIT_COL, SUNLIT_COL, 0.625), daylight), uv1.y);
     // ambientLightCol = mix(vec3(0.3, 0.3, 0.3), ambientLightCol, getAO(col, 0.65));
     float ao = getSSAO(viewPos, gbufferProjectionInverse, uv, aspectRatio, depthtex0);
 
@@ -212,22 +203,28 @@ if (depth == 1.0) {
     float rayFact = clamp((length(relPos * (duskDawn * 4.0)) - near) / (far - near), 0.0, 1.0);
     albedo = mix(albedo, RAY_COL, rays * rayFact * 0.5);
 
-    vec3 fogCol = getAtmosphere(normalize(relPos), shadowLitPos, vec3(0.4, 0.65, 1.0), skyBrightness);
+    vec3 fogCol = getAtmosphere(normalize(relPos), shadowLitPos, SKY_COL, skyBrightness);
     fogCol = toneMapReinhard(fogCol);
     fogCol = mix(fogColor, fogCol, uv1.y);
         
     float fogFact = clamp((length(relPos) - near) / (far - near), 0.0, 1.0);
 
     albedoUnderwater = albedo;
-    albedoUnderwater *= mix(defaultCol, lit, getWaterWav(fragPos.xz, frameTimeCounter) * 0.2);
+    #ifdef ENABLE_UNDERWATER_CAUSTICS
+        albedoUnderwater *= mix(defaultCol, lit, getWaterWav(fragPos.xz, frameTimeCounter) * 0.16);
+    #endif
 
-    albedoUnderwater *= mix(vec3(1.0), vec3(0.0, 0.5, 0.9), clamp(fogFact * 10.0, 0.0, 1.0) * 0.625);
+    #ifdef ENABLE_UNDERWATER_FOG
+        albedoUnderwater *= mix(vec3(1.0), vec3(0.0, 0.5, 0.9), clamp(fogFact * 10.0, 0.0, 1.0) * 0.55);
+    #endif
 
-    if (isEyeInWater == 0) {
-        albedo = mix(albedo, fogCol, fogFact);
-    } else if (isEyeInWater == 1) {
-        albedo *= mix(vec3(1.0), vec3(0.0, 0.5, 0.9), clamp(fogFact * 10.0, 0.0, 1.0));
-    }
+    #ifdef ENABLE_FOG
+        if (isEyeInWater == 0) {
+            albedo = mix(albedo, fogCol, fogFact);
+        } else if (isEyeInWater == 1) {
+            albedo *= mix(vec3(1.0), vec3(0.0, 0.5, 0.9), clamp(fogFact * 10.0, 0.0, 1.0));
+        }
+    #endif
 }
 
 	/* DRAWBUFFERS:06
