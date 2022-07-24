@@ -40,9 +40,10 @@ mat3 getTBNMatrix(const vec3 normal) {
 void main() {
 vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
 vec4 albedo = texture2D(texture, uv0);
-if (abs(col.r - col.g) > 0.001 || abs(col.g - col.b) > 0.001) {
-    albedo.rgb *= normalize(col.rgb);
-}
+albedo.rgb *= col.rgb;
+#ifdef BASIC
+    albedo = vec4(col.rgb, 1.0);
+#endif
 #ifdef ENTITY
     albedo.rgb = mix(albedo.rgb, entityColor.rgb, entityColor.a);
 #endif

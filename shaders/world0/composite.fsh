@@ -120,20 +120,20 @@ void main() {
 vec3 albedo = texture2D(gcolor, uv).rgb;
 vec4 bloom = texture2D(gaux2, uv);
 float depth = texture2D(depthtex0, uv).r;
-vec3 worldNormal = texture2D(gnormal, uv).rgb;
 float reflectance = texture2D(gnormal, uv).a;
 vec2 uv0 = texture2D(gaux1, uv).rg;
 vec2 uv1 = texture2D(gaux1, uv).ba;
 vec3 viewPos = getViewPos(gbufferProjectionInverse, uv, depth).xyz;
 vec3 relPos = getRelPos(gbufferModelViewInverse, gbufferProjectionInverse, uv, depth).xyz;
 vec3 fragPos = relPos + cameraPosition;
+vec3 worldNormal = normalize(cross(dFdx(fragPos), dFdy(fragPos)));
 float daylight = max(0.0, sin(sunPos.y));
 float duskDawn = min(smoothstep(0.0, 0.3, daylight), smoothstep(0.5, 0.3, daylight));
 float skyBrightness = mix(0.7, 2.0, smoothstep(0.0, 0.1, daylight));
 float cosTheta = abs(dot(normalize(relPos), worldNormal));
 float diffuse = max(0.0, dot(shadowLitPos, worldNormal));
 
-vec3 fogCol = getAtmosphere(normalize(relPos), shadowLitPos, SKY_COL, skyBrightness);
+vec3 fogCol = getAtmosphere(normalize(relPos), shadowLitPos, SKY_COL, 1.0 + 1.0 * uv1.y);
 fogCol = toneMapReinhard(fogCol);
 fogCol = mix(fogColor, fogCol, uv1.y);
 	

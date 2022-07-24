@@ -94,7 +94,7 @@ vec3 uncharted2ToneMap_(vec3 x) {
     return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
 }
 vec3 uncharted2ToneMap(vec3 frag, float exposureBias) {
-    const float whiteLevel = 112.0;
+    const float whiteLevel = 256.0;
 
     vec3 curr = uncharted2ToneMap_(exposureBias * frag);
     vec3 whiteScale = 1.0 / uncharted2ToneMap_(vec3(whiteLevel, whiteLevel, whiteLevel));
@@ -190,7 +190,6 @@ if (depth == 1.0) {
 	lit *= mix(defaultCol, AMBIENT_LIGHT_INTENSITY * max(0.65, daylight) * ambientLightCol, (1.0 - ao * 0.3));
 	lit *= mix(defaultCol, SKYLIGHT_INTENSITY * SKYLIT_COL, dirLight * daylight * max(0.5, 1.0 - rainStrength));
 	lit *= mix(defaultCol, SUNLIGHT_INTENSITY * mix(SUNLIT_COL, SUNLIT_COL_SET, duskDawn), dirLight * daylight * max(0.5, 1.0 - rainStrength));
-    //lit = mix(lit, RAY_INTENSITY * RAY_COL, rays * duskDawn * max(0.5, 1.0 - rainStrength));
     lit *= mix(defaultCol, MOONLIGHT_INTENSITY * MOONLIT_COL, dirLight * (1.0 - daylight) * max(0.5, 1.0 - rainStrength));
     lit *= mix(defaultCol, TORCHLIGHT_INTENSITY * TORCHLIT_COL, torchLit);
 
@@ -203,7 +202,7 @@ if (depth == 1.0) {
     float rayFact = clamp((length(relPos * (duskDawn * 4.0)) - near) / (far - near), 0.0, 1.0);
     albedo = mix(albedo, RAY_COL, rays * rayFact * 0.5);
 
-    vec3 fogCol = getAtmosphere(normalize(relPos), shadowLitPos, SKY_COL, skyBrightness);
+    vec3 fogCol = getAtmosphere(normalize(relPos), shadowLitPos, SKY_COL, 2.0 * uv1.y);
     fogCol = toneMapReinhard(fogCol);
     fogCol = mix(fogColor, fogCol, uv1.y);
         
