@@ -84,12 +84,12 @@ float getAO(vec4 vertexCol, const float shrinkLevel) {
  ** Archive: https://bit.ly/3NSGy4r
  */
 vec3 uncharted2ToneMap_(vec3 x) {
-    const float A = 0.017; // Shoulder strength
+    const float A = 0.015; // Shoulder strength
     const float B = 0.50;  // Linear strength
-    const float C = 0.02;  // Linear angle
-    const float D = 0.08;  // Toe strength
-    const float E = 0.01;  // Toe numerator
-    const float F = 0.50;  // Toe denominator
+    const float C = 0.10;  // Linear angle
+    const float D = 0.010; // Toe strength
+    const float E = 0.02;  // Toe numerator
+    const float F = 0.30;  // Toe denominator
 
     return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
 }
@@ -118,7 +118,7 @@ void main() {
 vec3 albedo = texture2D(gcolor, uv).rgb;
 vec3 albedoUnderwater = albedo;
 float depth = texture2D(depthtex0, uv).r;
-vec3 worldNormal = texture2D(gnormal, uv).rgb;
+vec3 worldNormal = texture2D(gnormal, uv).rgb * 2.0 - 1.0;
 float reflectance = texture2D(gnormal, uv).a;
 vec2 uv0 = texture2D(gaux1, uv).rg;
 vec2 uv1 = texture2D(gaux1, uv).ba;
@@ -195,34 +195,39 @@ if (depth == 1.0) {
 
 	albedo *= lit;
 	albedo = uncharted2ToneMap(albedo, 1.0);
-	albedo = contrastFilter(albedo, 1.4);
+	albedo = contrastFilter(albedo, 1.45);
 
-    albedo = pow(albedo * albedo, vec3(1.0 / 2.2));
+    albedo = pow(albedo * albedo, vec3(1.0 / GAMMA));
 
-    float rayFact = clamp((length(relPos * (duskDawn * 4.0)) - near) / (far - near), 0.0, 1.0);
-    albedo = mix(albedo, RAY_COL, rays * rayFact * 0.5);
+    #ifdef ENABLE_LIGHT_RAYS
+        float rayFact = clamp((length(relPos * (duskDawn * 4.0)) - near) / (far - near), 0.0, 1.0);
+        albedo = mix(albedo, RAY_COL, rays * rayFact * 0.5);
+    #endif
 
-    vec3 fogCol = getAtmosphere(normalize(relPos), shadowLitPos, SKY_COL, 2.0 * uv1.y);
+    vec3 fogCol = getAtmosphere(normalize(relPos), shadowLitPos, SKY_COL, max(0.7, skyBrightness * smoothstep(0.0, 0.5, uv1.y)));
     fogCol = toneMapReinhard(fogCol);
-    fogCol = mix(fogColor, fogCol, uv1.y);
         
     float fogFact = clamp((length(relPos) - near) / (far - near), 0.0, 1.0);
 
     albedoUnderwater = albedo;
     #ifdef ENABLE_UNDERWATER_CAUSTICS
-        albedoUnderwater *= mix(defaultCol, lit, getWaterWav(fragPos.xz, frameTimeCounter) * 0.16);
+        if (isEyeInWater == 0) {
+            albedoUnderwater *= mix(defaultCol, lit, getWaterWav(fragPos.xz, frameTimeCounter) * 0.16);
+        } else if (isEyeInWater == 1) {
+            albedo *= mix(defaultCol, lit, getWaterWav(fragPos.xz, frameTimeCounter) * 0.16);
+        }
     #endif
 
     #ifdef ENABLE_UNDERWATER_FOG
-        albedoUnderwater *= mix(vec3(1.0), vec3(0.0, 0.5, 0.9), clamp(fogFact * 10.0, 0.0, 1.0) * 0.55);
+        if (isEyeInWater == 0) {
+            albedoUnderwater *= mix(vec3(1.0), vec3(0.0, 0.5, 0.9), clamp(fogFact * 10.0, 0.0, 1.0) * 0.55);
+        } else if (isEyeInWater == 1) {
+            albedo *= mix(vec3(1.0), vec3(0.0, 0.5, 0.9), clamp(fogFact * 10.0, 0.0, 1.0) * 0.55);
+        }
     #endif
 
     #ifdef ENABLE_FOG
-        if (isEyeInWater == 0) {
-            albedo = mix(albedo, fogCol, fogFact);
-        } else if (isEyeInWater == 1) {
-            albedo *= mix(vec3(1.0), vec3(0.0, 0.5, 0.9), clamp(fogFact * 10.0, 0.0, 1.0));
-        }
+        albedo = mix(albedo, fogCol, fogFact);
     #endif
 }
 

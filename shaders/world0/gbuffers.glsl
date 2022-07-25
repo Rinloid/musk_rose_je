@@ -103,7 +103,7 @@ float reflectance =
      * 7 = gaux4
 	*/
 	gl_FragData[0] = albedo; // gcolor
-    gl_FragData[1] = vec4(normal, reflectance); // gnormal
+    gl_FragData[1] = vec4((normal + 1.0) * 0.5, reflectance); // gnormal
     gl_FragData[2] = vec4(uv0, uv1); // gaux1
     gl_FragData[3] = bloom; // gaux2
 }

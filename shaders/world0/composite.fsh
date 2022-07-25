@@ -80,9 +80,9 @@ vec3 nvec3(vec4 pos) {
 
 vec3 getRayTraceFactor(const vec3 viewPos, const vec3 reflectPos) {
 	const int refinementSteps = 6;
-	const int raySteps = 28;
+	const int raySteps = 32;
 
-	vec3 rayPosHit = vec3(0.0);
+	vec3 rayTracePosHit = vec3(0.0);
 	
 	vec3 refPos = reflectPos;
 	vec3 startPos = viewPos + refPos;
@@ -100,7 +100,7 @@ vec3 getRayTraceFactor(const vec3 viewPos, const vec3 reflectPos) {
 		if (distance(startPos, viewPos1) < length(refPos) * length(refPos)) {
 			sr++;
 			if (sr >= refinementSteps) {
-				rayPosHit = vec3(uv.xy, 1.0);
+				rayTracePosHit = vec3(uv.xy, 1.0);
 				break;
 			}
 
@@ -113,7 +113,7 @@ vec3 getRayTraceFactor(const vec3 viewPos, const vec3 reflectPos) {
 		startPos = viewPos + tracePos;
 	}
 
-    return rayPosHit;
+    return rayTracePosHit;
 }
 
 void main() {
@@ -126,21 +126,20 @@ vec2 uv1 = texture2D(gaux1, uv).ba;
 vec3 viewPos = getViewPos(gbufferProjectionInverse, uv, depth).xyz;
 vec3 relPos = getRelPos(gbufferModelViewInverse, gbufferProjectionInverse, uv, depth).xyz;
 vec3 fragPos = relPos + cameraPosition;
-vec3 worldNormal = normalize(cross(dFdx(fragPos), dFdy(fragPos)));
+vec3 worldNormal = texture2D(gnormal, uv).rgb * 2.0 - 1.0;
 float daylight = max(0.0, sin(sunPos.y));
 float duskDawn = min(smoothstep(0.0, 0.3, daylight), smoothstep(0.5, 0.3, daylight));
 float skyBrightness = mix(0.7, 2.0, smoothstep(0.0, 0.1, daylight));
 float cosTheta = abs(dot(normalize(relPos), worldNormal));
 float diffuse = max(0.0, dot(shadowLitPos, worldNormal));
 
-vec3 fogCol = getAtmosphere(normalize(relPos), shadowLitPos, SKY_COL, 1.0 + 1.0 * uv1.y);
+vec3 fogCol = getAtmosphere(normalize(relPos), shadowLitPos, SKY_COL, max(0.7, skyBrightness * smoothstep(0.0, 0.5, uv1.y)));
 fogCol = toneMapReinhard(fogCol);
-fogCol = mix(fogColor, fogCol, uv1.y);
 	
 float fogFact = clamp((length(relPos) - near) / (far - near), 0.0, 1.0);
 float rayFact = clamp((length(relPos * (duskDawn * 4.0)) - near) / (far - near), 0.0, 1.0);
 
-float outdoor = smoothstep(0.92, 0.95, uv1.y);
+float outdoor = smoothstep(0.5, 0.95, uv1.y);
 
 float rays = 0.0;
 vec3 relPosRay = relPos;
@@ -153,15 +152,15 @@ while (dot(relPosRay.xyz, relPosRay.xyz) > 0.25 * 0.25) {
 	}
 }
 
-float fresnel = 2.0;
-float shininess = 3.0;
+float fresnel = 0.0;
+float shininess = 0.0;
 
 if (depth < 1.0) {
 	if (reflectance > 0.5) {
 		worldNormal = normalize(getWaterWavNormal(fragPos.xz, frameTimeCounter) * getTBNMatrix(worldNormal));
 		vec3 refPos = reflect(normalize(viewPos), mat3(gbufferModelView) * worldNormal);
 		vec3 refUV = viewPos2UV(refPos, gbufferProjection);
-		vec3 rayPosHit = getRayTraceFactor(viewPos, refPos);
+		vec3 rayTracePosHit = getRayTraceFactor(viewPos, refPos);
 
 		vec3 refracted = texture2D(gaux3, uv).rgb;
 		#ifdef ENABLE_REFRACTION
@@ -170,8 +169,8 @@ if (depth < 1.0) {
 
 		vec3 ssr = albedo;
 		#ifdef ENABLE_SSR
-			if (rayPosHit.b > 0.5) {
-				ssr = texture2D(gcolor, rayPosHit.xy + hash22(floor(uv * 2048.0)) * 0.002).rgb;
+			if (rayTracePosHit.b > 0.5) {
+				ssr = texture2D(gcolor, rayTracePosHit.xy + hash22(floor(uv * 1024.0)) * 0.002).rgb;
 			}
 		#endif
 
@@ -179,13 +178,18 @@ if (depth < 1.0) {
 		albedo = mix(reflected, refracted, cosTheta * FRESNEL_RATIO);
 
 		fresnel   = 10.0;
-		shininess = 200.0;
+		shininess = 500.0;
+
+		#ifdef ENABLE_LIGHT_RAYS
+			albedo = mix(albedo, RAY_COL, rayFact * 0.5);
+		#endif
+
+		#ifdef ENABLE_FOG
+			albedo = mix(albedo, fogCol, fogFact);
+		#endif
 	}
 
 	albedo += min(specularLight(fresnel, shininess, sunPos, relPos, worldNormal), 1.0) * outdoor;
-
-	albedo = mix(albedo, RAY_COL, rayFact * 0.5);
-	albedo = mix(albedo, fogCol, fogFact);
 }
 
 	/* DRAWBUFFERS:0
