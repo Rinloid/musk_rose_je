@@ -78,6 +78,14 @@ float getAO(vec4 vertexCol, const float shrinkLevel) {
     return min(lum + (1.0 - shrinkLevel), 1.0);
 }
 
+vec3 hdrExposure(const vec3 col, const float overExposure, const float underExposure) {
+    vec3 overExposed   = col / overExposure;
+    vec3 normalExposed = col;
+    vec3 underExposed  = col * underExposure;
+
+    return mix(overExposed, underExposed, normalExposed);
+}
+
 /*
  ** Uncharted 2 tone mapping
  ** Link (deleted): http://filmicworlds.com/blog/filmic-tonemapping-operators/
@@ -85,28 +93,26 @@ float getAO(vec4 vertexCol, const float shrinkLevel) {
  */
 vec3 uncharted2ToneMap_(vec3 x) {
     const float A = 0.015; // Shoulder strength
-    const float B = 0.50;  // Linear strength
-    const float C = 0.10;  // Linear angle
+    const float B = 0.500; // Linear strength
+    const float C = 0.100; // Linear angle
     const float D = 0.010; // Toe strength
-    const float E = 0.02;  // Toe numerator
-    const float F = 0.30;  // Toe denominator
+    const float E = 0.020; // Toe numerator
+    const float F = 0.300; // Toe denominator
 
     return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
 }
-vec3 uncharted2ToneMap(vec3 frag, float exposureBias) {
+vec3 uncharted2ToneMap(const vec3 col, const float exposureBias) {
     const float whiteLevel = 256.0;
 
-    vec3 curr = uncharted2ToneMap_(exposureBias * frag);
+    vec3 curr = uncharted2ToneMap_(exposureBias * col);
     vec3 whiteScale = 1.0 / uncharted2ToneMap_(vec3(whiteLevel, whiteLevel, whiteLevel));
     vec3 color = curr * whiteScale;
 
     return clamp(color, 0.0, 1.0);
 }
 
-vec3 contrastFilter(vec3 color, float contrast) {
-    float t = 0.5 - contrast * 0.5;
-
-    return clamp(color * contrast + t, 0.0, 1.0);
+vec3 contrastFilter(const vec3 col, const float contrast) {
+    return (col - 0.5) * max(contrast, 0.0) + 0.5;
 }
 
 const float ambientOcclusionLevel = 1.0;
@@ -181,23 +187,24 @@ if (depth == 1.0) {
 	// torchLit = mix(0.0, torchLit, smoothstep(0.95, 0.5, uv1.y * daylight));
 
 	vec3 defaultCol = vec3(1.0, 1.0, 1.0);
-	vec3 ambientLightCol = mix(mix(1.0 / vec3(AMBIENT_LIGHT_INTENSITY) + 0.34, TORCHLIT_COL, torchLit), mix(MOONLIT_COL, mix(SKYLIT_COL, SUNLIT_COL, 0.625), daylight), uv1.y);
+	vec3 ambientLightCol = mix(mix(1.0 / vec3(AMBIENT_LIGHT_INTENSITY), TORCHLIT_COL, torchLit), mix(MOONLIT_COL, mix(SKYLIT_COL, SUNLIT_COL, 0.625), daylight), uv1.y);
     // ambientLightCol = mix(vec3(0.3, 0.3, 0.3), ambientLightCol, getAO(col, 0.65));
     float ao = getSSAO(viewPos, gbufferProjectionInverse, uv, aspectRatio, depthtex0);
 
 	vec3 lit = vec3(1.0, 1.0, 1.0);
 
-	lit *= mix(defaultCol, AMBIENT_LIGHT_INTENSITY * max(0.65, daylight) * ambientLightCol, (1.0 - ao * 0.3));
+	lit *= mix(defaultCol, AMBIENT_LIGHT_INTENSITY * max(0.65, daylight) * ambientLightCol, (1.0 - ao ));
 	lit *= mix(defaultCol, SKYLIGHT_INTENSITY * SKYLIT_COL, dirLight * daylight * max(0.5, 1.0 - rainStrength));
 	lit *= mix(defaultCol, SUNLIGHT_INTENSITY * mix(SUNLIT_COL, SUNLIT_COL_SET, duskDawn), dirLight * daylight * max(0.5, 1.0 - rainStrength));
     lit *= mix(defaultCol, MOONLIGHT_INTENSITY * MOONLIT_COL, dirLight * (1.0 - daylight) * max(0.5, 1.0 - rainStrength));
     lit *= mix(defaultCol, TORCHLIGHT_INTENSITY * TORCHLIT_COL, torchLit);
 
-	albedo *= lit;
-	albedo = uncharted2ToneMap(albedo, 1.0);
-	albedo = contrastFilter(albedo, 1.45);
+	albedo *= albedo * lit;
 
-    albedo = pow(albedo * albedo, vec3(1.0 / GAMMA));
+    albedo = pow(albedo, vec3(1.0 / GAMMA));
+    albedo = hdrExposure(albedo, 5.0, 0.5);
+	albedo = uncharted2ToneMap(albedo, 5.0);
+
 
     #ifdef ENABLE_LIGHT_RAYS
         float rayFact = clamp((length(relPos * (duskDawn * 4.0)) - near) / (far - near), 0.0, 1.0);
@@ -212,9 +219,9 @@ if (depth == 1.0) {
     albedoUnderwater = albedo;
     #ifdef ENABLE_UNDERWATER_CAUSTICS
         if (isEyeInWater == 0) {
-            albedoUnderwater *= mix(defaultCol, lit, getWaterWav(fragPos.xz, frameTimeCounter) * 0.16);
+            albedoUnderwater *= mix(defaultCol, lit, getWaterWav(fragPos.xz, frameTimeCounter) * 0.02);
         } else if (isEyeInWater == 1) {
-            albedo *= mix(defaultCol, lit, getWaterWav(fragPos.xz, frameTimeCounter) * 0.16);
+            albedo *= mix(defaultCol, lit, getWaterWav(fragPos.xz, frameTimeCounter) * 0.02);
         }
     #endif
 

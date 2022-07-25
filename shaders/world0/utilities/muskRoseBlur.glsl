@@ -1,7 +1,7 @@
 #if !defined BLUR_INCLUDED
 #define BLUR_INCLUDED 1
 
-#define BLUR_QUALITY 24 // [4 8 12 24 32 64 128 256 512]
+#define BLUR_QUALITY 64 // [24 32 64 128 256 512]
 
 mat2 getRotationMatrix(const float angle) {
 	return mat2(cos(angle), sin(angle), -sin(angle), cos(angle));

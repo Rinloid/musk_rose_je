@@ -23,7 +23,7 @@ float depth = texture2D(depthtex1, uv).r;
 vec2 screenResolution = vec2(viewWidth, viewHeight);
 vec2 pixelSize = 1.0 / screenResolution;
 float centreDepth = centerDepthSmooth;
-float unfocused = smoothstep(0.0, 0.075, abs(depth - centreDepth));
+float unfocused = smoothstep(0.0, 0.05, abs(depth - centreDepth));
 
 vec3 blurred = vec3(0.0);
 

@@ -26,7 +26,7 @@ vec4 bloom = texture2D(gaux2, uv);
 vec2 screenResolution = vec2(viewWidth, viewHeight);
 vec2 pixelSize = 1.0 / screenResolution;
 float centreDepth = centerDepthSmooth;
-float unfocused = smoothstep(0.0, 0.075, abs(depth - centreDepth));
+float unfocused = smoothstep(0.0, 0.05, abs(depth - centreDepth));
 
 vec3 blurred = vec3(0.0);
 
@@ -65,13 +65,13 @@ vec3 blurred = vec3(0.0);
 
 	/* DRAWBUFFERS:0
 	 * 0 = gcolor
-     * 1 = gdepth
-     * 2 = gnormal
-     * 3 = composite
-     * 4 = gaux1
-     * 5 = gaux2
-     * 6 = gaux3
-     * 7 = gaux4
+	 * 1 = gdepth
+	 * 2 = gnormal
+	 * 3 = composite
+	 * 4 = gaux1
+	 * 5 = gaux2
+	 * 6 = gaux3
+	 * 7 = gaux4
 	*/
 	gl_FragData[0] = vec4(albedo, 1.0); // gcolor
 }
