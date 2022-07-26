@@ -78,8 +78,9 @@ vec3 nvec3(vec4 pos) {
     return pos.xyz/pos.w;
 }
 
+// Based on one by Chocapic13
 vec3 getRayTraceFactor(const vec3 viewPos, const vec3 reflectPos) {
-	const int refinementSteps = 6;
+	const int refinementSteps = 5;
 	const int raySteps = 32;
 
 	vec3 rayTracePosHit = vec3(0.0);
@@ -97,7 +98,7 @@ vec3 getRayTraceFactor(const vec3 viewPos, const vec3 reflectPos) {
 		}
 
         vec3 viewPos1 = getViewPos(gbufferProjectionInverse, uv.xy, texture2D(depthtex0, uv.xy).x).xyz;
-		if (distance(startPos, viewPos1) < length(refPos) * length(refPos)) {
+		if (distance(startPos, viewPos1) < length(refPos) * pow(length(tracePos), 0.1)) {
 			sr++;
 			if (sr >= refinementSteps) {
 				rayTracePosHit = vec3(uv.xy, 1.0);
@@ -108,7 +109,7 @@ vec3 getRayTraceFactor(const vec3 viewPos, const vec3 reflectPos) {
 			refPos *= 0.07;
         }
 
-        refPos *= 2.2;
+        refPos *= 2.0;
         tracePos += refPos;
 		startPos = viewPos + tracePos;
 	}
@@ -164,7 +165,7 @@ if (depth < 1.0) {
 
 		vec3 refracted = texture2D(gaux3, uv).rgb;
 		#ifdef ENABLE_REFRACTION
-			refracted = texture2D(gaux3, refract(vec3(uv, 1.0), getWaterWavNormal(fragPos.xz, frameTimeCounter) * 0.1, 1.0).xy).rgb;
+			refracted = texture2D(gaux3, refract(vec3(uv, 1.0), getWaterWavNormal(fragPos.xz, frameTimeCounter) * 0.12, 1.0).xy).rgb;
 		#endif
 
 		vec3 ssr = albedo;

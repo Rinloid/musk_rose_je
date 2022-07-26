@@ -140,7 +140,7 @@ float skyBrightness = mix(0.7, 2.0, smoothstep(0.0, 0.1, daylight));
 float diffuse = max(0.0, dot(shadowLitPos, worldNormal));
 
 float shadows = 0.0;
-#ifndef BEDROCK_SHADOWS
+#ifndef ENABLE_BEDROCK_SHADOWS
     if (diffuse > 0.0 && bool(step(0.5, uv1.y))) {
         vec4 shadowPos = getShadowPos(gbufferModelViewInverse, gbufferProjectionInverse, shadowModelView, shadowProjection, relPos, uv, depth, diffuse);
         if (shadowPos.w > 0.0) {
@@ -184,16 +184,20 @@ if (depth == 1.0) {
     #endif
 	float dirLight = mix(0.0, specular, shadows);
 	float torchLit = uv1.x * uv1.x * uv1.x * uv1.x * uv1.x;
-	// torchLit = mix(0.0, torchLit, smoothstep(0.95, 0.5, uv1.y * daylight));
+	torchLit = mix(0.0, torchLit, smoothstep(0.96, 0.6, uv1.y));
 
 	vec3 defaultCol = vec3(1.0, 1.0, 1.0);
 	vec3 ambientLightCol = mix(mix(1.0 / vec3(AMBIENT_LIGHT_INTENSITY), TORCHLIT_COL, torchLit), mix(MOONLIT_COL, mix(SKYLIT_COL, SUNLIT_COL, 0.625), daylight), uv1.y);
-    // ambientLightCol = mix(vec3(0.3, 0.3, 0.3), ambientLightCol, getAO(col, 0.65));
-    float ao = getSSAO(viewPos, gbufferProjectionInverse, uv, aspectRatio, depthtex0);
+    float ao =
+    #ifdef ENABLE_SSAO
+        getSSAO(viewPos, gbufferProjectionInverse, uv, aspectRatio, depthtex0);
+    #else
+        0.0;
+    #endif
 
 	vec3 lit = vec3(1.0, 1.0, 1.0);
 
-	lit *= mix(defaultCol, AMBIENT_LIGHT_INTENSITY * max(0.65, daylight) * ambientLightCol, (1.0 - ao ));
+	lit *= mix(defaultCol, AMBIENT_LIGHT_INTENSITY * max(0.65, daylight) * ambientLightCol, (1.0 - ao * 0.65));
 	lit *= mix(defaultCol, SKYLIGHT_INTENSITY * SKYLIT_COL, dirLight * daylight * max(0.5, 1.0 - rainStrength));
 	lit *= mix(defaultCol, SUNLIGHT_INTENSITY * mix(SUNLIT_COL, SUNLIT_COL_SET, duskDawn), dirLight * daylight * max(0.5, 1.0 - rainStrength));
     lit *= mix(defaultCol, MOONLIGHT_INTENSITY * MOONLIT_COL, dirLight * (1.0 - daylight) * max(0.5, 1.0 - rainStrength));
@@ -204,7 +208,6 @@ if (depth == 1.0) {
     albedo = pow(albedo, vec3(1.0 / GAMMA));
     albedo = hdrExposure(albedo, 5.0, 0.5);
 	albedo = uncharted2ToneMap(albedo, 5.0);
-
 
     #ifdef ENABLE_LIGHT_RAYS
         float rayFact = clamp((length(relPos * (duskDawn * 4.0)) - near) / (far - near), 0.0, 1.0);

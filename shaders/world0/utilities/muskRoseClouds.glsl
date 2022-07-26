@@ -67,7 +67,7 @@ vec4 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const fl
                 float inside = 0.0;
                 for (int i = 0; i < raySteps; i++) {
                     rayPos += rayStep;
-                    float rayHeight = cloudMapShade(cloudPos, time, amp, rain, cloudOctaves);
+                    float rayHeight = cloudMapShade(cloudPos, time, amp, rain, cloudOctaves / 2);
                     
                     inside += max(0.0, rayHeight - (rayPos.y - pos.y));
                 } inside /= float(raySteps);

@@ -12,7 +12,7 @@ varying vec2 uv;
 
 #include "utilities/muskRoseBlur.glsl"
 
-#define ENABLE_ADDITIONAL_DOF
+#define ENABLE_DOF
 #define ENABLE_BLOOM
 
 const float centerDepthHalflife = 2.0; // [0.0 1.0 2.0 3.0 4.0 5.0]
@@ -30,7 +30,7 @@ float unfocused = smoothstep(0.0, 0.05, abs(depth - centreDepth));
 
 vec3 blurred = vec3(0.0);
 
-#ifdef ENABLE_ADDITIONAL_DOF
+#ifdef ENABLE_DOF
 	if (unfocused > 0.0 && depth > 0.8) {
 		for (int i = -steps; i < steps; i++) {
 			for (int j = -steps; j < steps; j++) {

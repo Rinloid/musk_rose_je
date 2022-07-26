@@ -59,7 +59,6 @@ if (waterFlag > 0.5) {
 
     albedo.rgb = vec3(0.0, 0.15, 0.3);
     albedo.a = 1.0;
-
     if (isEyeInWater == 1) {
         albedo.a = 0.5;
     }
@@ -73,7 +72,7 @@ if (waterFlag > 0.5) {
             reflectedSky = toneMapReinhard(reflectedSky);
             clouds = renderClouds(reflect(normalize(relPos), worldNormal), cameraPosition, shadowLitPos, smoothstep(0.0, 0.25, daylight), rainStrength, frameTimeCounter);
 
-            reflectedSky = mix(albedo.rgb, mix(albedo.rgb, mix(reflectedSky, clouds.rgb, clouds.a * 0.65), outdoor), 1.0 - (1.0 - outdoor));
+            reflectedSky = mix(albedo.rgb, mix(albedo.rgb, mix(reflectedSky, clouds.rgb, clouds.a * 0.65), outdoor), outdoor);
         }
 
         albedo.rgb = reflectedSky;
