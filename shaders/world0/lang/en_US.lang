@@ -1,0 +1,10 @@
+profile.BEDROCK = Bedrock
+profile.DEFAULT = Default
+
+screen.SKY = Sky
+screen.CLOUDS = Clouds
+screen.WATER = Water
+screen.LIGHTING = Lighting
+screen.SHADOWS = Shadows
+screen.POST_PROCESSING = Post Processing
+screen.OTHERS = Others
