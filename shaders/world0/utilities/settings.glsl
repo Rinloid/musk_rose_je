@@ -1,6 +1,8 @@
 #if !defined SETTINGS_INCLUDED
 #define SETTINGS_INCLUDED
 
+#define INFO 1
+
 #define RAY_COL  vec3(0.63, 0.62, 0.45)
 #define SKY_COL  vec3(0.4, 0.65, 1.0)
 #define MOON_COL vec3(1.0, 0.95, 0.81)

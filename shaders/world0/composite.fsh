@@ -121,8 +121,7 @@ void main() {
 vec3 albedo = texture2D(gcolor, uv).rgb;
 vec4 bloom = texture2D(gaux2, uv);
 float depth = texture2D(depthtex0, uv).r;
-float reflectance = texture2D(gnormal, uv).a;
-vec2 uv0 = texture2D(gaux1, uv).rg;
+float reflectance = texture2D(gaux1, uv).r;
 vec2 uv1 = texture2D(gaux1, uv).ba;
 vec3 viewPos = getViewPos(gbufferProjectionInverse, uv, depth).xyz;
 vec3 relPos = getRelPos(gbufferModelViewInverse, gbufferProjectionInverse, uv, depth).xyz;

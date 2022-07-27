@@ -126,14 +126,13 @@ void main() {
 vec3 albedo = texture2D(gcolor, uv).rgb;
 vec3 albedoUnderwater = albedo;
 float depth = texture2D(depthtex0, uv).r;
-vec3 worldNormal = texture2D(gnormal, uv).rgb * 2.0 - 1.0;
-float reflectance = texture2D(gnormal, uv).a;
-vec2 uv0 = texture2D(gaux1, uv).rg;
+float reflectance = texture2D(gaux1, uv).r;
 vec2 uv1 = texture2D(gaux1, uv).ba;
 vec4 bloom = texture2D(gaux2, uv);
 vec3 viewPos = getViewPos(gbufferProjectionInverse, uv, depth).xyz;
 vec3 relPos = getRelPos(gbufferModelViewInverse, gbufferProjectionInverse, uv, depth).xyz;
 vec3 fragPos = relPos + cameraPosition;
+vec3 worldNormal = texture2D(gnormal, uv).rgb * 2.0 - 1.0;
 float cosTheta = abs(dot(normalize(relPos), worldNormal));
 float daylight = max(0.0, sin(sunPos.y));
 float duskDawn = min(smoothstep(0.0, 0.3, daylight), smoothstep(0.5, 0.3, daylight));
@@ -188,7 +187,7 @@ if (depth == 1.0) {
     #endif
 	float dirLight = mix(0.0, specular, shadows);
 	float torchLit = uv1.x * uv1.x * uv1.x * uv1.x * uv1.x;
-	torchLit = mix(0.0, torchLit, smoothstep(0.96, 0.6, uv1.y * daylight));
+	torchLit = mix(0.0, torchLit, smoothstep(0.96, 0.6, uv1.y * smoothstep(0.0, 0.5, daylight)));
 
 	vec3 defaultCol = vec3(1.0, 1.0, 1.0);
 	vec3 ambientLightCol = mix(mix(1.0 / vec3(AMBIENT_LIGHT_INTENSITY), TORCHLIT_COL, torchLit), mix(MOONLIT_COL, mix(SKYLIT_COL, SUNLIT_COL, 0.625), daylight), uv1.y);
