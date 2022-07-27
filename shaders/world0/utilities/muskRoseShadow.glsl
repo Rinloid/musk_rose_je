@@ -5,19 +5,15 @@
  ** Shadow distortion based on Shadow Tutorial.  Visit shaderLABS for details.
  ** https://discord.gg/KJ2SXNkKqS
 */
-
 float cubeLength(vec2 v) {
 	return pow(abs(v.x * v.x * v.x) + abs(v.y * v.y * v.y), 1.0 / 3.0);
 }
-
 float getDistortFactor(vec2 v) {
 	return cubeLength(v) + 0.05;
 }
-
 vec3 distort(vec3 v, float factor) {
 	return vec3(v.xy / factor, v.z * 0.5);
 }
-
 vec3 distort(vec3 v) {
 	return distort(v, getDistortFactor(v.xy));
 }

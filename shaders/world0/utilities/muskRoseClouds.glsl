@@ -33,19 +33,22 @@ float fBM(vec2 x, const float amp, const float lower, const float upper, const f
 }
 
 float cloudMap(const vec2 pos, const float time, const float amp, const float rain, const int oct) {
-    return fBM(pos, 0.55 - amp * 0.1, mix(0.8, 0.0, rain), 0.825, time, oct);
+    return fBM(pos, 0.55 - amp * 0.12, mix(0.8, 0.0, rain), 0.825, time, oct);
 }
 
 float cloudMapShade(const vec2 pos, const float time, const float amp, const float rain, const int oct) {
-    return fBM(pos * 0.9, 0.55 - amp * 0.1, mix(0.75, 0.0, rain), 1.0, time, oct);
+    return fBM(pos * 0.9, 0.55 - amp * 0.12, mix(0.75, 0.0, rain), 1.0, time, oct);
 }
 
+/*
+ ** Generate volumetric clouds with piled 2D noise.
+*/
 vec4 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const float brightness, const float rain, const float time) {
-    const vec3 cloudCol = vec3(1.0, 0.99, 0.97);
+    const vec3 cloudCol = vec3(1.0);
     const float cloudHeight = 256.0;
     const int cloudOctaves = 6;
     const int cloudSteps = 40;
-    const float stepSize = 0.012;
+    const float stepSize = 0.016;
     const int raySteps = 2;
     const float rayStepSize = 0.18;
     
@@ -67,7 +70,7 @@ vec4 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const fl
                 float inside = 0.0;
                 for (int i = 0; i < raySteps; i++) {
                     rayPos += rayStep;
-                    float rayHeight = cloudMapShade(cloudPos, time, amp, rain, cloudOctaves / 2);
+                    float rayHeight = cloudMapShade(cloudPos, time, amp, rain, cloudOctaves);
                     
                     inside += max(0.0, rayHeight - (rayPos.y - pos.y));
                 } inside /= float(raySteps);
@@ -82,10 +85,6 @@ vec4 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const fl
 
     clouds.a = mix(clouds.a, 0.0, drawSpace);
     
-    // clouds.a = clouds.a > 0.0 ? 1.0 : 0.0;
-    // clouds.a = smoothstep(0.0, 0.5, clouds.a);
-    // clouds.a = pow(clouds.a, 1.2);
-
     #ifdef ENABLE_CLOUDS
         return clouds;
     #else

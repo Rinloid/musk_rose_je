@@ -122,6 +122,7 @@ vec3 albedo = texture2D(gcolor, uv).rgb;
 vec4 bloom = texture2D(gaux2, uv);
 float depth = texture2D(depthtex0, uv).r;
 float reflectance = texture2D(gaux1, uv).r;
+float waterFlag = texture2D(gaux1, uv).g;
 vec2 uv1 = texture2D(gaux1, uv).ba;
 vec3 viewPos = getViewPos(gbufferProjectionInverse, uv, depth).xyz;
 vec3 relPos = getRelPos(gbufferModelViewInverse, gbufferProjectionInverse, uv, depth).xyz;
@@ -157,14 +158,18 @@ float shininess = 0.0;
 
 if (depth < 1.0) {
 	if (reflectance > 0.5) {
-		worldNormal = normalize(getWaterWavNormal(fragPos.xz, frameTimeCounter) * getTBNMatrix(worldNormal));
+		if (waterFlag > 0.5) {
+			worldNormal = normalize(getWaterWavNormal(fragPos.xz, frameTimeCounter) * getTBNMatrix(worldNormal));
+		}
 		vec3 refPos = reflect(normalize(viewPos), mat3(gbufferModelView) * worldNormal);
 		vec3 refUV = viewPos2UV(refPos, gbufferProjection);
 		vec3 rayTracePosHit = getRayTraceFactor(viewPos, refPos);
 
 		vec3 refracted = texture2D(gaux3, uv).rgb;
 		#ifdef ENABLE_REFRACTION
-			refracted = texture2D(gaux3, refract(vec3(uv, 1.0), getWaterWavNormal(fragPos.xz, frameTimeCounter) * 0.12, 1.0).xy).rgb;
+			if (waterFlag > 0.5) {
+				refracted = texture2D(gaux3, refract(vec3(uv, 1.0), getWaterWavNormal(fragPos.xz, frameTimeCounter) * 0.12, 1.0).xy).rgb;
+			}
 		#endif
 
 		vec3 ssr = albedo;
@@ -175,7 +180,11 @@ if (depth < 1.0) {
 		#endif
 
 		vec3 reflected = ssr;
-		albedo = mix(reflected, refracted, cosTheta * FRESNEL_RATIO);
+		if (waterFlag > 0.5) {
+			albedo = mix(reflected, refracted, cosTheta * FRESNEL_RATIO);
+		} else {
+			albedo = mix(reflected, albedo, cosTheta);
+		}
 
 		fresnel   = 10.0;
 		shininess = 500.0;
@@ -189,11 +198,11 @@ if (depth < 1.0) {
 		#endif
 	}
 
-	albedo += min(specularLight(fresnel, shininess, sunPos, relPos, worldNormal), 1.0) * outdoor;
+	albedo += min(specularLight(fresnel, shininess, sunPos, relPos, worldNormal), 1.0) * outdoor * smoothstep(0.0, 0.1, daylight);
 }
 
-	/* DRAWBUFFERS:0
-	 * 0 = gcolor
+    /* DRAWBUFFERS:0
+     * 0 = gcolor
      * 1 = gdepth
      * 2 = gnormal
      * 3 = composite
@@ -201,6 +210,6 @@ if (depth < 1.0) {
      * 5 = gaux2
      * 6 = gaux3
      * 7 = gaux4
-	*/
+    */
 	gl_FragData[0] = vec4(albedo, 1.0); // gcolor
 }

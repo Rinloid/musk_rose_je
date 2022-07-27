@@ -20,6 +20,8 @@
 #define TORCHLIT_COL vec3(1.0, 0.65, 0.3)
 #define MOONLIT_COL vec3(0.5, 0.65, 1.0)
 
+#define ENABLE_FOLIAGE_WAVES
+#define FOLIAGE_WAVE_STRENGTH 0.03 // [0.01 0.02 0.03 0.04 0.05]
 #define ENABLE_FOG
 #define ENABLE_LIGHT_RAYS
 #define ENABLE_SSAO
@@ -35,6 +37,5 @@
 #define ENABLE_UNDERWATER_FOG
 #define FRESNEL_RATIO 0.8 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 #define GAMMA 2.2 // [1.8 2.2 2.4]
-
 
 #endif /* !defined SETTINGS_INCLUDED */

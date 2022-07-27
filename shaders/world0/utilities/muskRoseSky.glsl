@@ -5,30 +5,25 @@
  ** Atmoshpere based on one by robobo1221.
  ** See: https://www.shadertoy.com/view/Ml2cWG
 */
-
 vec3 getAbsorption(const vec3 pos, const float posY, const float brightness) {
 	vec3 absorption = pos * -posY;
 	absorption = exp2(absorption) * brightness;
 	
 	return absorption;
 }
-
 float getSunSpot(const vec3 pos, const vec3 sunPos) {
 	return smoothstep(0.03, 0.025, distance(pos, sunPos)) * 25.0;
 }
-
 float getRayleig(const vec3 pos, const vec3 sunPos) {
     float dist = 1.0 - clamp(distance(pos, sunPos), 0.0, 1.0);
 
 	return 1.0 + dist * dist * 3.14;
 }
-
 float getMie(const vec3 pos, const vec3 sunPos) {
 	float disk = clamp(1.0 - pow(distance(pos, sunPos), 0.1), 0.0, 1.0);
 	
 	return disk * disk * (3.0 - 2.0 * disk) * 2.0 * 3.14;
 }
-
 vec3 getAtmosphere(const vec3 pos, const vec3 sunPos, const vec3 skyCol, const float brightness) {
 	float zenith = 0.5 / pow(max(pos.y, 0.05), 0.5);
 	
@@ -43,6 +38,13 @@ vec3 getAtmosphere(const vec3 pos, const vec3 sunPos, const vec3 skyCol, const f
 	result *= sunAbsorption * 0.5 + 0.5 * length(sunAbsorption);
 	
 	return result;
+}
+
+float getStars(const vec3 pos) {
+    vec3 p = floor((normalize(pos) + 16.0) * 265.0);
+    float stars = smoothstep(0.998, 1.0, hash13(p));
+
+    return stars;
 }
 
 float drawSun(const vec3 pos) {

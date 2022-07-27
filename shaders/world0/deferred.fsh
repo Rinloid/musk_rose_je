@@ -177,9 +177,10 @@ if (depth == 1.0) {
 
     vec4 clouds = renderClouds(skyPos, cameraPosition, shadowLitPos, smoothstep(0.0, 0.25, daylight), rainStrength, frameTimeCounter);
     float moon = mix(drawMoon(cross(skyPos, moonPos) * 127.0, getMoonPhase(moonPhase), 10.0), 0.0, smoothstep(0.0, 0.1, daylight));
+    albedo = mix(albedo, vec3(1.0), getStars(skyPos) * smoothstep(0.2, 0.0, daylight));
+    albedo = mix(albedo, MOON_COL * mix(1.0, 0.85, clamp(simplexNoise(cross(skyPos, moonPos).xz / 0.06), 0.0, 1.0)), moon);
 
     albedo = mix(albedo, clouds.rgb, clouds.a * 0.65);
-    albedo = mix(albedo, MOON_COL * mix(1.0, 0.85, clamp(simplexNoise(cross(skyPos, moonPos).xz / 0.06), 0.0, 1.0)), moon);
 } else if (reflectance < 0.5) {
     float specular = specularLight(1.8, 0.02, shadowLitPos, relPos, worldNormal);
     #ifndef ENABLE_SPECULAR
@@ -244,7 +245,7 @@ if (depth == 1.0) {
     #endif
 }
 
-	/* DRAWBUFFERS:06
+    /* DRAWBUFFERS:06
      * 0 = gcolor
      * 1 = gdepth
      * 2 = gnormal
@@ -253,7 +254,7 @@ if (depth == 1.0) {
      * 5 = gaux2
      * 6 = gaux3
      * 7 = gaux4
-	*/
+    */
 	gl_FragData[0] = vec4(albedo, 1.0); // gcolor
     gl_FragData[1] = vec4(albedoUnderwater, 1.0); // gaux3
 }

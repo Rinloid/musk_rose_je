@@ -20,7 +20,6 @@ float specularLight(const float fresnel, const float shininess, const vec3 light
     #else
         return 0.0;
     #endif
-
 }
 
 #endif /* !defined SPECULAR_INCLUDED */
