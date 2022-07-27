@@ -18,6 +18,7 @@ uniform float rainStrength;
 uniform vec3 cameraPosition;
 uniform vec3 fogColor;
 uniform int isEyeInWater;
+uniform int moonPhase;
 
 varying vec2 uv;
 varying vec3 shadowLitPos, sunPos, moonPos;
@@ -27,6 +28,7 @@ varying vec3 shadowLitPos, sunPos, moonPos;
 #include "utilities/muskRoseSky.glsl"
 #include "utilities/muskRoseClouds.glsl"
 #include "utilities/muskRoseSpecular.glsl"
+#include "utilities/noiseFunctions.glsl"
 
 vec3 uv2ViewPos(const vec2 uv, const mat4 projInv, const float depth) {
     vec3 pos = vec3(uv, depth);
@@ -175,8 +177,10 @@ if (depth == 1.0) {
 	albedo = toneMapReinhard(albedo);
 
     vec4 clouds = renderClouds(skyPos, cameraPosition, shadowLitPos, smoothstep(0.0, 0.25, daylight), rainStrength, frameTimeCounter);
+    float moon = mix(drawMoon(cross(skyPos, moonPos) * 127.0, getMoonPhase(moonPhase), 10.0), 0.0, smoothstep(0.0, 0.1, daylight));
 
     albedo = mix(albedo, clouds.rgb, clouds.a * 0.65);
+    albedo = mix(albedo, MOON_COL * mix(1.0, 0.85, clamp(simplexNoise(cross(skyPos, moonPos).xz / 0.06), 0.0, 1.0)), moon);
 } else if (reflectance < 0.5) {
     float specular = specularLight(1.8, 0.02, shadowLitPos, relPos, worldNormal);
     #ifndef ENABLE_SPECULAR
@@ -184,7 +188,7 @@ if (depth == 1.0) {
     #endif
 	float dirLight = mix(0.0, specular, shadows);
 	float torchLit = uv1.x * uv1.x * uv1.x * uv1.x * uv1.x;
-	torchLit = mix(0.0, torchLit, smoothstep(0.96, 0.6, uv1.y));
+	torchLit = mix(0.0, torchLit, smoothstep(0.96, 0.6, uv1.y * daylight));
 
 	vec3 defaultCol = vec3(1.0, 1.0, 1.0);
 	vec3 ambientLightCol = mix(mix(1.0 / vec3(AMBIENT_LIGHT_INTENSITY), TORCHLIT_COL, torchLit), mix(MOONLIT_COL, mix(SKYLIT_COL, SUNLIT_COL, 0.625), daylight), uv1.y);
@@ -197,7 +201,7 @@ if (depth == 1.0) {
 
 	vec3 lit = vec3(1.0, 1.0, 1.0);
 
-	lit *= mix(defaultCol, AMBIENT_LIGHT_INTENSITY * max(0.65, daylight) * ambientLightCol, (1.0 - ao * 0.65));
+	lit *= mix(defaultCol, AMBIENT_LIGHT_INTENSITY * max(0.2, daylight) * ambientLightCol, (1.0 - ao * 0.65));
 	lit *= mix(defaultCol, SKYLIGHT_INTENSITY * SKYLIT_COL, dirLight * daylight * max(0.5, 1.0 - rainStrength));
 	lit *= mix(defaultCol, SUNLIGHT_INTENSITY * mix(SUNLIT_COL, SUNLIT_COL_SET, duskDawn), dirLight * daylight * max(0.5, 1.0 - rainStrength));
     lit *= mix(defaultCol, MOONLIGHT_INTENSITY * MOONLIT_COL, dirLight * (1.0 - daylight) * max(0.5, 1.0 - rainStrength));

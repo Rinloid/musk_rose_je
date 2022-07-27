@@ -9,6 +9,7 @@ uniform float frameTimeCounter;
 uniform vec3 cameraPosition;
 uniform vec4 entityColor;
 uniform int isEyeInWater;
+uniform int moonPhase;
 
 varying vec2 uv0;
 varying vec2 uv1;
@@ -65,14 +66,17 @@ if (waterFlag > 0.5) {
 
 	vec3 reflectedSky = vec3(0.0);
 	vec4 clouds = vec4(0.0);
+    float moon = 0.0;
 
     #ifdef ENABLE_SKY_REFLECTION
         if (!bool(1.0 - outdoor) && isEyeInWater == 0) {
             reflectedSky = getAtmosphere(reflect(normalize(relPos), worldNormal), shadowLitPos, SKY_COL, skyBrightness);
             reflectedSky = toneMapReinhard(reflectedSky);
             clouds = renderClouds(reflect(normalize(relPos), worldNormal), cameraPosition, shadowLitPos, smoothstep(0.0, 0.25, daylight), rainStrength, frameTimeCounter);
+            moon = drawMoon(cross(reflect(normalize(relPos), worldNormal), moonPos) * 127.0, getMoonPhase(moonPhase), 10.0);
 
             reflectedSky = mix(albedo.rgb, mix(albedo.rgb, mix(reflectedSky, clouds.rgb, clouds.a * 0.65), outdoor), outdoor);
+            reflectedSky = mix(reflectedSky, MOON_COL * mix(1.0, 0.85, clamp(simplexNoise(cross(reflect(normalize(relPos), worldNormal), moonPos).xz / 0.06), 0.0, 1.0)), moon);
         }
 
         albedo.rgb = reflectedSky;

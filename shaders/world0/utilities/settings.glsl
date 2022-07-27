@@ -1,14 +1,15 @@
 #if !defined SETTINGS_INCLUDED
 #define SETTINGS_INCLUDED
 
-#define RAY_COL vec3(0.63, 0.62, 0.45)
-#define SKY_COL vec3(0.4, 0.65, 1.0)
+#define RAY_COL  vec3(0.63, 0.62, 0.45)
+#define SKY_COL  vec3(0.4, 0.65, 1.0)
+#define MOON_COL vec3(1.0, 0.95, 0.81)
 
 #define AMBIENT_LIGHT_INTENSITY 40.0
 #define SKYLIGHT_INTENSITY 15.0
 #define SUNLIGHT_INTENSITY 85.0
 #define RAY_INTENSITY 2.0
-#define MOONLIGHT_INTENSITY 40.0
+#define MOONLIGHT_INTENSITY 35.0
 #define TORCHLIGHT_INTENSITY 10.0
 
 #define SKYLIT_COL vec3(0.9, 0.98, 1.0)
