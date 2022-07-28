@@ -96,7 +96,7 @@ if (waterFlag > 0.5 || blendFlag > 0.5 || tintFlag > 0.5) {
         if (waterFlag > 0.5) {
             albedo.rgb = reflectedSky;
         } else if ((refUV.x < 0 || refUV.x > 1 || refUV.y < 0 || refUV.y > 1 || refUV.z < 0 || refUV.z > 1.0)) {
-            albedo.rgb = mix(reflectedSky, albedo.rgb, cosTheta);
+            albedo.rgb = mix(reflectedSky, albedo.rgb, cosTheta * FRESNEL_RATIO);
         }
     #endif
 }
