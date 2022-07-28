@@ -183,7 +183,7 @@ if (depth < 1.0) {
 		if (waterFlag > 0.5) {
 			albedo = mix(reflected, refracted, cosTheta * FRESNEL_RATIO);
 		} else {
-			albedo = mix(reflected, albedo, cosTheta);
+			albedo = mix(reflected, albedo, cosTheta * FRESNEL_RATIO);
 		}
 
 		fresnel   = 10.0;
