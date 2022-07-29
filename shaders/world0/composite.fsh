@@ -182,8 +182,6 @@ if (depth < 1.0) {
 		vec3 reflected = ssr;
 		if (waterFlag > 0.5) {
 			albedo = mix(reflected, refracted, cosTheta * FRESNEL_RATIO);
-		} else {
-			albedo = mix(reflected, albedo, cosTheta * FRESNEL_RATIO);
 		}
 
 		fresnel   = 10.0;

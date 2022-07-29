@@ -210,7 +210,7 @@ if (depth == 1.0) {
 	albedo *= albedo * lit;
 
     albedo = pow(albedo, vec3(1.0 / GAMMA));
-    albedo = hdrExposure(albedo, 5.0, 0.5);
+    albedo = hdrExposure(albedo, 5.0, 0.4);
 	albedo = uncharted2ToneMap(albedo, 5.0);
 
     #ifdef ENABLE_LIGHT_RAYS

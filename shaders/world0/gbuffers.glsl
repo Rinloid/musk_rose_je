@@ -54,7 +54,9 @@ albedo.rgb *= col.rgb;
 #ifdef ENTITY
     albedo.rgb = mix(albedo.rgb, entityColor.rgb, entityColor.a);
 #endif
-
+if (blendFlag > 0.5) {
+    albedo *= texture2D(lightmap, uv1);
+}
 float outdoor = smoothstep(0.5, 0.6, uv1.y);
 float daylight = max(0.0, sin(sunPos.y));
 float duskDawn = min(smoothstep(0.0, 0.3, daylight), smoothstep(0.5, 0.3, daylight));
@@ -74,7 +76,6 @@ if (waterFlag > 0.5 || blendFlag > 0.5 || tintFlag > 0.5) {
             albedo.a = 0.5;
         }
     }
-
     vec3 skyPos = reflect(normalize(relPos), worldNormal);
     vec3 refPos = reflect(normalize(viewPos), mat3(gbufferModelView) * worldNormal);
 	vec3 refUV = viewPos2UV(refPos, gbufferProjection);
@@ -95,9 +96,10 @@ if (waterFlag > 0.5 || blendFlag > 0.5 || tintFlag > 0.5) {
         }
         if (waterFlag > 0.5) {
             albedo.rgb = reflectedSky;
-        } else if ((refUV.x < 0 || refUV.x > 1 || refUV.y < 0 || refUV.y > 1 || refUV.z < 0 || refUV.z > 1.0)) {
+        } else {
             albedo.rgb = mix(reflectedSky, albedo.rgb, cosTheta * FRESNEL_RATIO);
         }
+
     #endif
 }
 
