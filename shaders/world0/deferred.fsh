@@ -4,11 +4,13 @@ uniform mat4 gbufferProjection, gbufferProjectionInverse;
 uniform mat4 shadowProjection, shadowModelView;
 uniform sampler2D gcolor;
 uniform sampler2D gnormal;
+uniform sampler2D gaux1;
 uniform sampler2D depthtex0;
 uniform sampler2D shadowtex0;
 uniform sampler2D shadowtex1;
 uniform sampler2D shadowcolor0;
 uniform vec3 cameraPosition;
+uniform float rainStrength;
 
 varying vec2 uv;
 varying vec3 sunPos, moonPos, shadowLitPos;
@@ -42,6 +44,54 @@ vec4 getShadowPos(const mat4 modelViewInv, const mat4 projInv, const mat4 shadow
 	return shadowPos;
 }
 
+vec3 hdrExposure(const vec3 col, const float overExposure, const float underExposure) {
+    vec3 overExposed   = col / overExposure;
+    vec3 normalExposed = col;
+    vec3 underExposed  = col * underExposure;
+
+    return mix(overExposed, underExposed, normalExposed);
+}
+
+/*
+ ** Uncharted 2 tone mapping
+ ** Link (deleted): http://filmicworlds.com/blog/filmic-tonemapping-operators/
+ ** Archive: https://bit.ly/3NSGy4r
+ */
+vec3 uncharted2ToneMap_(vec3 x) {
+    const float A = 0.015; // Shoulder strength
+    const float B = 0.500; // Linear strength
+    const float C = 0.100; // Linear angle
+    const float D = 0.010; // Toe strength
+    const float E = 0.020; // Toe numerator
+    const float F = 0.300; // Toe denominator
+
+    return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
+}
+vec3 uncharted2ToneMap(const vec3 col, const float exposureBias) {
+    const float whiteLevel = 256.0;
+
+    vec3 curr = uncharted2ToneMap_(exposureBias * col);
+    vec3 whiteScale = 1.0 / uncharted2ToneMap_(vec3(whiteLevel, whiteLevel, whiteLevel));
+    vec3 color = curr * whiteScale;
+
+    return clamp(color, 0.0, 1.0);
+}
+
+#define AMBIENT_LIGHT_INTENSITY 10.0
+#define SKYLIGHT_INTENSITY 20.0
+#define SUNLIGHT_INTENSITY 30.0
+#define MOONLIGHT_INTENSITY 10.0
+#define TORCHLIGHT_INTENSITY 60.0
+
+#define SKYLIGHT_COL vec3(0.9, 0.98, 1.0)
+#define SUNLIGHT_COL vec3(1.0, 0.9, 0.85)
+#define SUNLIGHT_COL_SET vec3(1.0, 0.60, 0.1)
+#define TORCHLIGHT_COL vec3(1.0, 0.65, 0.3)
+#define MOONLIGHT_COL vec3(0.5, 0.65, 1.0)
+
+#define EXPOSURE_BIAS 5.2
+#define GAMMA 2.2
+
 const float sunPathRotation = -40.0; // [-50  -45 -40  -35 -30 -25 -20 -15 -10 -5 0 5 10 15 20 25 30 35 40 45 50]
 const int shadowMapResolution = 1024; // [512 1024 2048 4096]
 const float shadowDistance = 512.0;
@@ -49,6 +99,7 @@ const float shadowDistance = 512.0;
 void main() {
 vec3 albedo = texture2D(gcolor, uv).rgb;
 vec3 normal = texture2D(gnormal, uv).rgb * 2.0 - 1.0;
+vec2 uv1 = texture2D(gaux1, uv).rg;
 float depth = texture2D(depthtex0, uv).r;
 vec3 viewPos = getViewPos(gbufferProjectionInverse, uv, depth).xyz;
 vec3 relPos  = getRelPos(gbufferModelViewInverse, gbufferProjectionInverse, uv, depth).xyz;
@@ -56,10 +107,18 @@ vec3 fragPos = relPos + cameraPosition;
 float diffuse = max(0.0, dot(shadowLitPos, normal));
 float daylight = max(0.0, sin(sunPos.y));
 float duskDawn = min(smoothstep(0.0, 0.3, daylight), smoothstep(0.5, 0.3, daylight));
+float dirLightFact = 0.0;
+float emissiveLightFact = 0.0;
+float clearWeather = 1.0 - rainStrength;
+vec3 sunlightCol = mix(SUNLIGHT_COL, SUNLIGHT_COL_SET, duskDawn);
+vec3 daylightCol = mix(SKYLIGHT_COL, sunlightCol, 0.4);
+vec3 ambientLightCol = mix(MOONLIGHT_COL, daylightCol, daylight);
+vec4 shadows = vec4(vec3(diffuse), 1.0);
+
+vec3 light = vec3(0.0);
 
 if (depth == 1.0) {
 } else {
-vec4 shadows = vec4(vec3(diffuse), 1.0);
 vec4 shadowPos = getShadowPos(gbufferModelViewInverse, gbufferProjectionInverse, shadowModelView, shadowProjection, relPos, uv, depth, diffuse);
 if (diffuse > 0.0) {
     if (texture2D(shadowtex0, shadowPos.xy).r < shadowPos.z) {
@@ -71,10 +130,27 @@ if (diffuse > 0.0) {
     }
 }
 
-albedo += vec3(1.4) - (1.0 - shadows.rgb);
-albedo *= 0.5;
-albedo = pow(albedo, vec3(2.0));
+dirLightFact = mix(0.0, diffuse, shadows.a);
+emissiveLightFact = uv1.x * uv1.x * uv1.x * uv1.x * uv1.x;
+ambientLightCol = mix(mix(vec3(0.0), TORCHLIGHT_COL, emissiveLightFact), ambientLightCol, dirLightFact);
 }
+
+ambientLightCol += 1.0 - max(max(ambientLightCol.r, ambientLightCol.g), ambientLightCol.b);
+
+light += ambientLightCol * AMBIENT_LIGHT_INTENSITY * mix(0.0, mix(0.9, 1.4, daylight), uv1.y);
+light += sunlightCol * SUNLIGHT_INTENSITY * dirLightFact * daylight * clearWeather;
+light += MOONLIGHT_COL * MOONLIGHT_INTENSITY * dirLightFact * (1.0 - daylight) * clearWeather;
+light += SKYLIGHT_COL * SKYLIGHT_INTENSITY * dirLightFact * daylight * clearWeather;
+light += TORCHLIGHT_COL * TORCHLIGHT_INTENSITY * emissiveLightFact;
+
+/*
+ ** Apply coloured shadows.
+*/
+light += ((normalize(light) + 1.0) * 0.5 - (1.0 - shadows.rgb)) * light;
+
+albedo *= light;
+albedo = hdrExposure(albedo, EXPOSURE_BIAS, 0.2);
+albedo = uncharted2ToneMap(albedo, EXPOSURE_BIAS);
 
     /* DRAWBUFFERS:0
      * 0 = gcolor

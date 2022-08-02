@@ -1,5 +1,4 @@
 #if defined GBUFFERS_FRAGMENT
-uniform sampler2D lightmap;
 uniform sampler2D texture;
 uniform mat4 gbufferModelView, gbufferModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
@@ -49,7 +48,7 @@ vec3 worldNormal = mat3(gbufferModelViewInverse) * normal;
 #endif
 
 #   if !defined GBUFFERS_SHADOW
-        /* DRAWBUFFERS:02
+        /* DRAWBUFFERS:024
         * 0 = gcolor
         * 1 = gdepth
         * 2 = gnormal
@@ -61,6 +60,7 @@ vec3 worldNormal = mat3(gbufferModelViewInverse) * normal;
         */
         gl_FragData[0] = albedo; // gcolor
         gl_FragData[1] = vec4((worldNormal + 1.0) * 0.5, 1.0); // gnormal
+        gl_FragData[2] = vec4(uv1, 0.0, 0.0); // gaux1
 #   else
         /* DRAWBUFFERS:0
         * 0 = everything
