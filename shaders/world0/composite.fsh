@@ -110,6 +110,7 @@ vec3 albedo = texture2D(gcolor, uv).rgb;
 vec3 normal = texture2D(gnormal, uv).rgb * 2.0 - 1.0;
 vec2 uv1 = texture2D(gaux1, uv).rg;
 float depth = texture2D(depthtex0, uv).r;
+float blendFlag = texture2D(gaux1, uv).b;
 vec3 viewPos = getViewPos(gbufferProjectionInverse, uv, depth).xyz;
 vec3 relPos  = getRelPos(gbufferModelViewInverse, gbufferProjectionInverse, uv, depth).xyz;
 vec3 fragPos = relPos + cameraPosition;
@@ -130,9 +131,7 @@ vec4 shadows = vec4(vec3(diffuse), 1.0);
 
 vec3 light = vec3(0.0);
 
-if (depth == 1.0) {
-    albedo = sky;
-} else {
+if (blendFlag > 0.5) {
     #include "lighting.glsl"
 }
 
