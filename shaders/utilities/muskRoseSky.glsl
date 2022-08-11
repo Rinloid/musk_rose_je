@@ -55,7 +55,7 @@ float getStars(const vec3 pos) {
     return stars;
 }
 
-float drawSun(const vec3 pos) {
+float getSun(const vec3 pos) {
 	return inversesqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z);
 }
 
@@ -77,7 +77,7 @@ float diffuseSphere(const vec3 spherePosition, const float radius, const vec3 li
     }
 }
 
-float drawMoon(const vec3 moonPosition, const float moonPhase, const float moonScale) {
+float getMoon(const vec3 moonPosition, const float moonPhase, const float moonScale) {
 	vec3 lightPosition = vec3(sin(moonPhase), 0.0, -cos(moonPhase));
     float m = diffuseSphere(moonPosition, moonScale, lightPosition);
     
@@ -95,8 +95,10 @@ vec3 toneMapReinhard(const vec3 color) {
 
 vec3 getSky(const vec3 pos, const vec3 sunPos, const vec3 skyCol, const float brightness) {
 	vec3 sky = getAtmosphere(pos, sunPos, skyCol, brightness);
+	sky = toneMapReinhard(sky);
+	sky = mix(sky, vec3(1.0), getSun(cross(pos, sunPos) * 25.0));
 
-	return toneMapReinhard(sky);
+	return sky;
 }
 
 #endif /* !defined SKY_INCLUDED */

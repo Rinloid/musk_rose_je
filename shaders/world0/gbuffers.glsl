@@ -30,6 +30,8 @@ float fogify(const float x, const float w) {
 #include "/utilities/muskRoseWater.glsl"
 #include "/utilities/muskRoseSky.glsl"
 
+#define SKY_COL  vec3(0.4, 0.65, 1.0)
+
 void main() {
 vec4 albedo =
 #if defined GBUFFERS_BASIC
@@ -40,7 +42,12 @@ vec4 albedo =
     texture2D(texture, uv0) * col;
 #endif
 vec2 uvp = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
-vec3 worldNormal = mat3(gbufferModelViewInverse) * normal;
+vec3 worldNormal =
+#if !defined GBUFFERS_BASIC
+    mat3(gbufferModelViewInverse) * normal;
+#else
+    vec3(0.0);
+#endif
 if (waterFlag > 0.5) {
     worldNormal = normalize(getWaterWavNormal(fragPos.xz, frameTimeCounter) * tbnMatrix);
     worldNormal = mat3(gbufferModelViewInverse) * worldNormal;
@@ -68,13 +75,16 @@ float blendFlag = 0.0;
 #endif
 
 if (waterFlag > 0.5) {
-    albedo = vec4(0.0, 0.2, 0.3, 0.1);
+    albedo = vec4(0.0, 0.2, 0.3, 1.0);
 }
 
 #if defined GBUFFERS_WATER
     blendFlag = 1.0;
-    
-    albedo.a = mix(1.0, albedo.a, cosTheta);
+    vec3 reflectedSky = getSky(reflect(skyPos, worldNormal), shadowLightPos, SKY_COL, skyBrightness);
+
+    if (waterFlag > 0.5) {
+        albedo.rgb = reflectedSky;
+    }
 #endif
 
 #if defined DEBUG_WHITE
@@ -82,7 +92,7 @@ if (waterFlag > 0.5) {
 #endif
 
 #   if !defined GBUFFERS_SHADOW
-        /* DRAWBUFFERS:024
+        /* DRAWBUFFERS:0246
         * 0 = gcolor
         * 1 = gdepth
         * 2 = gnormal
@@ -95,6 +105,8 @@ if (waterFlag > 0.5) {
         gl_FragData[0] = albedo; // gcolor
         gl_FragData[1] = vec4((worldNormal + 1.0) * 0.5, 1.0); // gnormal
         gl_FragData[2] = vec4(uv1, blendFlag, 1.0); // gaux1
+        gl_FragData[3] = vec4(waterFlag, 0.0, 0.0, 1.0); // gaux3
+
 #   else
         /* DRAWBUFFERS:0
         * 0 = everything
@@ -130,7 +142,12 @@ flat varying float waterFlag;
 
 void main() {
 uv0 = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
-uv1 = (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;
+uv1 =
+#if !defined GBUFFERS_BASIC
+    (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;
+#else
+    vec2(0.0);
+#endif
 col =
 #if defined GBUFFERS_SKY
     vec4(gl_Color.rgb, float(gl_Color.r == gl_Color.g && gl_Color.g == gl_Color.b && gl_Color.r > 0.0));

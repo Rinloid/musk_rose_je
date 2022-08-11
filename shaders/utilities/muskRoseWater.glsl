@@ -64,7 +64,7 @@ float getWaterWav(const vec2 pos, const float time) {
      ** The scale should become very small?
     */
 
-    #ifdef ENABLE_WATER_WAVES
+    #if defined ENABLE_WATER_WAVES
 	    return wav * 0.005;
     #else
         return 0.0;
