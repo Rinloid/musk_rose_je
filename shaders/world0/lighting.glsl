@@ -15,6 +15,7 @@ uniform sampler2D shadowtex1;
 uniform sampler2D shadowcolor0;
 uniform vec3 cameraPosition;
 uniform float rainStrength;
+uniform float frameTimeCounter;
 uniform float far, near;
 uniform float aspectRatio;
 
@@ -131,7 +132,7 @@ vec3 contrastFilter(const vec3 col, const float contrast) {
 #define GAMMA 2.2
 
 const float sunPathRotation = -40.0; // [-50  -45 -40  -35 -30 -25 -20 -15 -10 -5 0 5 10 15 20 25 30 35 40 45 50]
-const int shadowMapResolution = 1024; // [512 1024 2048 4096]
+const int shadowMapResolution = 2048; // [512 1024 2048 4096]
 const float shadowDistance = 512.0;
 const float occlShadowDepth = 0.6;
 
@@ -157,7 +158,7 @@ float amnientLightFactor = 1.0;
 float dirLightFactor = 0.0;
 float emissiveLightFactor = 0.0;
 float clearWeather = 1.0 - rainStrength;
-vec3 sky = getSky(skyPos, shadowLightPos, SKY_COL, daylight);
+vec3 sky = getSky(skyPos, shadowLightPos, SKY_COL, daylight, rainStrength, frameTimeCounter);
 vec3 skylightCol = vec3(0.0);
 vec3 sunlightCol = mix(SUNLIGHT_COL, SUNLIGHT_COL_SET, duskDawn);
 vec3 daylightCol = mix(sky, sunlightCol, 0.4);
@@ -179,12 +180,14 @@ vec3 light = vec3(0.0);
 #endif
 {
     vec4 shadowPos = getShadowPos(gbufferModelViewInverse, gbufferProjectionInverse, shadowModelView, shadowProjection, relPos, uv, depth, diffuse);
-    if (diffuse > 0.0) {
-        if (texture2D(shadowtex0, shadowPos.xy).r < shadowPos.z) {
-            if (texture2D(shadowtex1, shadowPos.xy).r < shadowPos.z) {
+    if (diffuse > 0.0 && shadowPos.w > 0.0) {
+        vec2 offset = vec2(0.0);
+        offset += hash12(floor(uv * 2048.0)) * 0.0005;
+        if (texture2D(shadowtex0, shadowPos.xy + offset).r < shadowPos.z) {
+            if (texture2D(shadowtex1, shadowPos.xy + offset).r < shadowPos.z) {
                 shadows = vec4(vec3(0.0), 0.0);
             } else {
-                shadows = vec4(texture2D(shadowcolor0, shadowPos.xy).rgb, 0.0);
+                shadows = vec4(texture2D(shadowcolor0, shadowPos.xy + offset).rgb, 0.0);
             }
         }
     }

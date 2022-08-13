@@ -48,6 +48,7 @@ float simplexNoise(vec2 v) {
 }
 
 #define ENABLE_WATER_WAVES
+// #define SIMPLE_WAVES
 
 /*
  ** Generate water waves with simplex noises.
@@ -56,15 +57,19 @@ float getWaterWav(const vec2 pos, const float time) {
 	float wav = 0.0;
     vec2  p   = pos * 0.5;
 
-    wav += simplexNoise(vec2(p.x * 1.4 - time * 0.4, p.y + time * 0.4) * 0.6) * 4.0;
-    wav += simplexNoise(vec2(p.x * 1.0 + time * 0.6, p.y - time * 0.75)) * 0.5;
-    wav += simplexNoise(vec2(p.x * 2.2 - time * 0.3, p.y * 2.8 - time * 0.6)) * 0.25;
+#   if !defined SIMPLE_WAVES
+        wav += simplexNoise(vec2(p.x * 1.4 - time * 0.4, p.y + time * 0.4) * 0.6) * 3.0;
+        wav += simplexNoise(vec2(p.x * 1.0 + time * 0.6, p.y - time * 0.75)) * 0.5;
+        wav += simplexNoise(vec2(p.x * 2.2 - time * 0.3, p.y * 2.8 - time * 0.6)) * 0.25;
+#   else
+        wav += simplexNoise(vec2(p.x, p.y)) * 2.0;
+#   endif
 
 #   if defined ENABLE_WATER_WAVES
         /*
         ** The scale should become very small?
         */
-	    return wav * 0.005;
+	    return wav * 0.0075;
 #   else
         return 0.0;
 #   endif

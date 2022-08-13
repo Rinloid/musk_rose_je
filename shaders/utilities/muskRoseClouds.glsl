@@ -33,15 +33,15 @@ float fBM(vec2 x, const float amp, const float lower, const float upper, const f
 }
 
 float cloudMap(const vec2 pos, const float time, const float amp, const float rain, const int oct) {
-    return fBM(pos, 0.55 - amp * 0.12, mix(0.8, 0.0, rain), 0.825, time, oct);
+    return fBM(pos, 0.55 - amp * 0.1, mix(0.8, 0.0, rain), 0.825, time, oct);
 }
 
 float cloudMapShade(const vec2 pos, const float time, const float amp, const float rain, const int oct) {
-    return fBM(pos * 0.9, 0.55 - amp * 0.12, mix(0.75, 0.0, rain), 1.0, time, oct);
+    return fBM(pos * 0.9, 0.55 - amp * 0.1, mix(0.75, 0.0, rain), 1.0, time, oct);
 }
 
 #define ENABLE_CLOUDS
-#define ENABLE_CLOUD_SHADING
+// #define ENABLE_CLOUD_SHADING
 
 /*
  ** Generate volumetric clouds with piled 2D noise.
@@ -49,8 +49,8 @@ float cloudMapShade(const vec2 pos, const float time, const float amp, const flo
 vec4 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const float brightness, const float rain, const float time) {
     const vec3 cloudCol = vec3(1.0);
     const float cloudHeight = 256.0;
-    const int cloudOctaves = 6;
-    const int cloudSteps = 20;
+    const int cloudOctaves = 5;
+    const int cloudSteps = 24;
     const float stepSize = 0.016;
     const int raySteps = 2;
     const float rayStepSize = 0.18;
@@ -79,7 +79,7 @@ vec4 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const fl
                 } inside /= float(raySteps);
 
 
-                clouds.rgb = mix(clouds.rgb + 0.2 / float(cloudSteps) * brightness, max(vec3(0.0), clouds.rgb - 0.5 / float(cloudSteps) * brightness), inside);
+                clouds.rgb = mix(clouds.rgb + 0.1 / float(cloudSteps) * brightness, max(vec3(0.0), clouds.rgb - 0.5 / float(cloudSteps) * brightness), inside);
 #           endif
             amp += 1.0 / float(cloudSteps);
 

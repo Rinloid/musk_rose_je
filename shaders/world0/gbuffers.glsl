@@ -4,6 +4,7 @@ uniform mat4 gbufferModelView, gbufferModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
 uniform float viewWidth, viewHeight;
 uniform float frameTimeCounter;
+uniform float rainStrength;
 uniform vec4 entityColor;
 uniform vec3 fogColor;
 uniform vec3 skyColor;
@@ -75,13 +76,13 @@ float blendAlpha = 1.0;
 #endif
 
 if (waterFlag > 0.5) {
-    albedo = vec4(0.0, 0.2, 0.3, 0.1);
+    albedo = vec4(0.0, 0.02, 0.03, 0.1);
 }
 
 #if defined GBUFFERS_WATER
     blendFlag = 1.0;
     blendAlpha = albedo.a;
-    vec3 reflectedSky = getSky(reflect(skyPos, worldNormal), shadowLightPos, SKY_COL, daylight);
+    vec3 reflectedSky = getSky(reflect(skyPos, worldNormal), shadowLightPos, SKY_COL, daylight, rainStrength, frameTimeCounter);
 
     if (waterFlag > 0.5) {
         albedo.rgb = reflectedSky;
