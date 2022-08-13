@@ -36,17 +36,7 @@ vec3 getAtmosphere(const vec3 pos, const vec3 sunPos, const vec3 skyCol, const f
 	return result;
 }
 
-/*
- ** Hash from "Hahs without Sine"
- ** Author: David Hoskins
- ** See: https://www.shadertoy.com/view/4djSRW
-*/
-float hash13(vec3 p3) {
-	p3  = fract(p3 * .1031);
-    p3 += dot(p3, p3.zyx + 31.32);
-
-    return fract((p3.x + p3.y) * p3.z);
-}
+#include "muskRoseHash.glsl"
 
 float getStars(const vec3 pos) {
     vec3 p = floor((normalize(pos) + 16.0) * 265.0);
@@ -93,8 +83,20 @@ vec3 toneMapReinhard(const vec3 color) {
     return result;
 }
 
-vec3 getSky(const vec3 pos, const vec3 sunPos, const vec3 skyCol, const float brightness) {
-	vec3 sky = getAtmosphere(pos, sunPos, skyCol, brightness);
+#include "muskRoseClouds.glsl"
+
+vec3 getSky(const vec3 pos, const vec3 sunPos, const vec3 skyCol, const float daylight) {
+	vec3 sky = getAtmosphere(pos, sunPos, skyCol, mix(0.7, 2.0, smoothstep(0.0, 0.1, daylight)));
+	vec4 clouds = renderClouds(pos, vec3(0.0), sunPos, smoothstep(0.0, 0.25, daylight), 0.0, 0.0);
+	sky = toneMapReinhard(sky);
+	sky = mix(sky, vec3(1.0), getSun(cross(pos, sunPos) * 25.0));
+	sky = mix(sky, clouds.rgb, clouds.a * 0.65);
+
+	return sky;
+}
+
+vec3 getSkyLight(const vec3 pos, const vec3 sunPos, const vec3 skyCol, const float daylight) {
+	vec3 sky = getAtmosphere(pos, sunPos, skyCol, mix(0.7, 2.0, smoothstep(0.0, 0.1, daylight)));
 	sky = toneMapReinhard(sky);
 	sky = mix(sky, vec3(1.0), getSun(cross(pos, sunPos) * 25.0));
 

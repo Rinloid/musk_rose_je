@@ -14,6 +14,7 @@ uniform vec3 cameraPosition;
 varying vec2 uv;
 
 #include "/utilities/muskRoseWater.glsl"
+#include "/utilities/muskRoseHash.glsl"
 
 vec4 getViewPos(const mat4 projInv, const vec2 uv, const float depth) {
 	vec4 viewPos = projInv * vec4(vec3(uv, depth) * 2.0 - 1.0, 1.0);
@@ -36,7 +37,7 @@ vec3 getRayTraceFactor(const sampler2D depthTex, const mat4 proj, const mat4 pro
 	
 	vec3 refPos = reflectPos;
 	vec3 startPos = viewPos + refPos;
-	vec3 tracePos = refPos;
+	vec3 tracePos = refPos + hash33(floor(viewPos * 2048.0)) * 0.2;
 
     int sr = 0;
     for (int i = 0; i < raySteps; i++) {
@@ -92,7 +93,7 @@ if (waterFlag > 0.5) {
     }
 
     reflected = ssr;
-    refracted = texture2D(gaux2, refract(vec3(uv, 1.0), getWaterWavNormal(fragPos.xz, frameTimeCounter) * 0.1, 1.0).xy).rgb;
+    refracted = texture2D(gaux2, refract(vec3(uv, 1.0), getWaterWavNormal(getWaterParallax(viewPos, fragPos.xz, frameTimeCounter), frameTimeCounter) * 0.1, 1.0).xy).rgb;
 
     albedo = mix(reflected, refracted, cosTheta);
 }

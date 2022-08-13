@@ -49,14 +49,14 @@ vec3 worldNormal =
     vec3(0.0);
 #endif
 if (waterFlag > 0.5) {
-    worldNormal = normalize(getWaterWavNormal(fragPos.xz, frameTimeCounter) * tbnMatrix);
+    worldNormal = normalize(getWaterWavNormal(getWaterParallax(viewPos, fragPos.xz, frameTimeCounter), frameTimeCounter) * tbnMatrix);
     worldNormal = mat3(gbufferModelViewInverse) * worldNormal;
 }
 vec3 skyPos = normalize(relPos);
 float cosTheta = abs(dot(normalize(relPos), worldNormal));
 float daylight = max(0.0, sin(sunPos.y));
-float skyBrightness = mix(0.7, 2.0, smoothstep(0.0, 0.1, daylight));
 float blendFlag = 0.0;
+float blendAlpha = 1.0;
 
 #if defined GBUFFERS_ENTITIES
     albedo.rgb = mix(albedo.rgb, entityColor.rgb, entityColor.a);
@@ -75,15 +75,23 @@ float blendFlag = 0.0;
 #endif
 
 if (waterFlag > 0.5) {
-    albedo = vec4(0.0, 0.2, 0.3, 1.0);
+    albedo = vec4(0.0, 0.2, 0.3, 0.1);
 }
 
 #if defined GBUFFERS_WATER
     blendFlag = 1.0;
-    vec3 reflectedSky = getSky(reflect(skyPos, worldNormal), shadowLightPos, SKY_COL, skyBrightness);
+    blendAlpha = albedo.a;
+    vec3 reflectedSky = getSky(reflect(skyPos, worldNormal), shadowLightPos, SKY_COL, daylight);
 
     if (waterFlag > 0.5) {
         albedo.rgb = reflectedSky;
+        albedo.a = 1.0;
+    }
+#endif
+
+#if defined GBUFFERS_SHADOW
+    if (waterFlag > 0.5) {
+        albedo.rgb = vec3(0.0, 0.6, 0.9);
     }
 #endif
 
@@ -105,7 +113,7 @@ if (waterFlag > 0.5) {
         gl_FragData[0] = albedo; // gcolor
         gl_FragData[1] = vec4((worldNormal + 1.0) * 0.5, 1.0); // gnormal
         gl_FragData[2] = vec4(uv1, blendFlag, 1.0); // gaux1
-        gl_FragData[3] = vec4(waterFlag, 0.0, 0.0, 1.0); // gaux3
+        gl_FragData[3] = vec4(waterFlag, blendAlpha, 0.0, 1.0); // gaux3
 
 #   else
         /* DRAWBUFFERS:0
@@ -165,7 +173,7 @@ binormal  = normalize(gl_NormalMatrix * cross(at_tangent.xyz, gl_Normal.xyz) * a
 normal    = normalize(gl_NormalMatrix * gl_Normal);
 tbnMatrix = transpose(mat3(tangent, binormal, normal));
 waterFlag =
-#if defined GBUFFERS_WATER
+#if defined GBUFFERS_WATER || defined GBUFFERS_SHADOW
     int(mc_Entity.x) == 10000 ? 1.0 : 0.0;
 #else
     0.0;

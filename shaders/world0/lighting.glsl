@@ -118,7 +118,7 @@ vec3 contrastFilter(const vec3 col, const float contrast) {
 #define AMBIENT_LIGHT_INTENSITY 10.0
 #define SKYLIGHT_INTENSITY 15.0
 #define SUNLIGHT_INTENSITY 30.0
-#define MOONLIGHT_INTENSITY 10.0
+#define MOONLIGHT_INTENSITY 5.0
 #define TORCHLIGHT_INTENSITY 60.0
 
 #define SKYLIGHT_COL vec3(0.9, 0.98, 1.0)
@@ -144,6 +144,7 @@ vec3 normal = texture2D(gnormal, uv).rgb * 2.0 - 1.0;
 vec2 uv1 = texture2D(gaux1, uv).rg;
 float blendFlag = texture2D(gaux1, uv).b;
 float waterFlag = texture2D(gaux3, uv).r;
+float blendAlpha = texture2D(gaux3, uv).g;
 float depth = texture2D(depthtex0, uv).r;
 vec3 viewPos = getViewPos(gbufferProjectionInverse, uv, depth).xyz;
 vec3 relPos  = getRelPos(gbufferModelViewInverse, gbufferProjectionInverse, uv, depth).xyz;
@@ -152,12 +153,11 @@ vec3 skyPos = normalize(relPos);
 float diffuse = max(0.0, dot(shadowLightPos, normal));
 float daylight = max(0.0, sin(sunPos.y));
 float duskDawn = min(smoothstep(0.0, 0.3, daylight), smoothstep(0.5, 0.3, daylight));
-float skyBrightness = mix(0.7, 2.0, smoothstep(0.0, 0.1, daylight));
 float amnientLightFactor = 1.0;
 float dirLightFactor = 0.0;
 float emissiveLightFactor = 0.0;
 float clearWeather = 1.0 - rainStrength;
-vec3 sky = getSky(skyPos, shadowLightPos, SKY_COL, skyBrightness);
+vec3 sky = getSky(skyPos, shadowLightPos, SKY_COL, daylight);
 vec3 skylightCol = vec3(0.0);
 vec3 sunlightCol = mix(SUNLIGHT_COL, SUNLIGHT_COL_SET, duskDawn);
 vec3 daylightCol = mix(sky, sunlightCol, 0.4);
@@ -194,19 +194,19 @@ vec3 light = vec3(0.0);
     emissiveLightFactor = uv1.x * uv1.x * uv1.x * uv1.x * uv1.x;
     ambientLightCol = mix(mix(vec3(0.0), TORCHLIGHT_COL, emissiveLightFactor), mix(MOONLIGHT_COL, daylightCol, daylight), dirLightFactor);
     ambientLightCol += 1.0 - max(max(ambientLightCol.r, ambientLightCol.g), ambientLightCol.b);
-    skylightCol = getSky(reflect(skyPos, normal), shadowLightPos, SKY_COL, skyBrightness);
+    skylightCol = getSkyLight(reflect(skyPos, normal), shadowLightPos, SKY_COL, daylight);
     if (blendFlag > 0.5) {
-        fresnel   = 20.0;
+        fresnel   = 40.0;
         shininess = 500.0;
     }
     float specularLight = getSpecularLight(fresnel, shininess, shadowLightPos, relPos, normal);
 
     light += ambientLightCol * AMBIENT_LIGHT_INTENSITY * amnientLightFactor * occlShadow;
-    light += sunlightCol * SUNLIGHT_INTENSITY * dirLightFactor * daylight * clearWeather;
-    light += MOONLIGHT_COL * MOONLIGHT_INTENSITY * dirLightFactor * (1.0 - daylight) * clearWeather;
-    light += skylightCol * SKYLIGHT_INTENSITY * dirLightFactor * daylight * clearWeather;
-    light += TORCHLIGHT_COL * TORCHLIGHT_INTENSITY * emissiveLightFactor;
-    light += light * specularLight;
+    light += sunlightCol * SUNLIGHT_INTENSITY * dirLightFactor * daylight * clearWeather * blendAlpha;
+    light += MOONLIGHT_COL * MOONLIGHT_INTENSITY * dirLightFactor * (1.0 - daylight) * clearWeather * blendAlpha;
+    light += skylightCol * SKYLIGHT_INTENSITY * dirLightFactor * daylight * clearWeather * blendAlpha;
+    light += TORCHLIGHT_COL * TORCHLIGHT_INTENSITY * emissiveLightFactor * blendAlpha;
+    light += light * specularLight * dirLightFactor * daylight;
 
     /*
     ** Apply coloured shadows.
@@ -214,12 +214,12 @@ vec3 light = vec3(0.0);
     light += ((normalize(light) + 1.0) * 0.5 - (1.0 - shadows.rgb)) * light;
 
     albedo *= light;
-    albedo = hdrExposure(albedo, EXPOSURE_BIAS, 0.2);
+    albedo = hdrExposure(albedo, EXPOSURE_BIAS, 0.2 + 0.02 * (1.0 - blendAlpha));
     albedo = uncharted2ToneMap(albedo, EXPOSURE_BIAS);
     albedo = contrastFilter(albedo, 1.2);
 
     float fogFactor = clamp((length(relPos) - near) / (far - near), 0.0, 1.0);
-    float fogBrightness = skyBrightness;
+    float fogBrightness = mix(0.7, 2.0, smoothstep(0.0, 0.1, daylight));
     vec3 fogCol = toneMapReinhard(getAtmosphere(skyPos, shadowLightPos, SKY_COL, fogBrightness));
     albedo = mix(albedo, fogCol, fogFactor);
 
