@@ -1,7 +1,7 @@
 #version 120
 
 uniform sampler2D gcolor;
-uniform sampler2D depthtex0;
+uniform sampler2D depthtex1;
 uniform float centerDepthSmooth;
 uniform float viewWidth, viewHeight;
 
@@ -17,7 +17,7 @@ const float centerDepthHalflife = 2.0; // [0.0 1.0 2.0 3.0 4.0 5.0]
 
 void main() {
 vec3 albedo = texture2D(gcolor, uv).rgb;
-float depth = texture2D(depthtex0, uv).r;
+float depth = texture2D(depthtex1, uv).r;
 
 /*
  ** Apply Depth of Field effect.
@@ -31,7 +31,7 @@ vec2 pixelSize = 1.0 / screenResolution;
 float unfocused = smoothstep(0.0, 0.01, abs(depth - centreDepth));
 vec3 blurred = vec3(0.0, 0.0, 0.0);
 
-const int steps = 6;
+const int steps = 5;
 
 #if defined ENABLE_DOF
 	if (unfocused > 0.0) {
@@ -40,7 +40,7 @@ const int steps = 6;
 				vec2 offset = vec2(i, j) * pixelSize;
 				offset *= getRotationMatrix(float(steps * 2 * steps * 2));
 
-				blurred += texture2D(gcolor, uv + offset * unfocused).rgb;
+				blurred += texture2D(gcolor, uv + offset * unfocused * 1.5).rgb;
 			}
 		} blurred /= float(steps * 2 * steps * 2);
 

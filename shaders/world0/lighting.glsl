@@ -115,6 +115,7 @@ vec3 contrastFilter(const vec3 col, const float contrast) {
 #include "/utilities/muskRoseSSAO.glsl"
 
 #define SKY_COL  vec3(0.4, 0.65, 1.0)
+#define RAY_COL  vec3(0.63, 0.62, 0.45)
 
 #define AMBIENT_LIGHT_INTENSITY 10.0
 #define SKYLIGHT_INTENSITY 15.0
@@ -132,7 +133,7 @@ vec3 contrastFilter(const vec3 col, const float contrast) {
 #define GAMMA 2.2
 
 const float sunPathRotation = -40.0; // [-50  -45 -40  -35 -30 -25 -20 -15 -10 -5 0 5 10 15 20 25 30 35 40 45 50]
-const int shadowMapResolution = 1024; // [512 1024 2048 4096]
+const int shadowMapResolution = 2048; // [512 1024 2048 4096]
 const float shadowDistance = 512.0;
 const float occlShadowDepth = 0.6;
 
@@ -221,15 +222,29 @@ vec3 light = vec3(0.0);
     albedo = uncharted2ToneMap(albedo, EXPOSURE_BIAS);
     albedo = contrastFilter(albedo, 1.2);
 
+    float sunRayFactor = 0.0;
+    vec3 relPosRay = relPos;
+    relPosRay.xyz *= mix(1.0, 1.3, hash12(floor(gl_FragCoord.xy * 2048.0) + frameTimeCounter));
+    while (dot(relPosRay.xyz, relPosRay.xyz) > 0.25 * 0.25) {
+        relPosRay.xyz *= 0.75;
+        vec4 rayPos = getShadowPos(gbufferModelViewInverse, gbufferProjectionInverse, shadowModelView, shadowProjection, relPosRay, uv, depth, 1.0);
+        if (texture2D(shadowtex0, rayPos.xy).r > rayPos.z) {
+            sunRayFactor = mix(rayPos.w, sunRayFactor, exp2(length(relPosRay.xyz) * -0.0625));
+        }
+    }
+    sunRayFactor = min(sunRayFactor * clamp((length(relPos * (duskDawn * 4.0)) - near) / (far - near), 0.0, 1.0) * 0.5 + sunRayFactor * getMie(skyPos, sunPos), 1.0);
+
+    albedo = mix(albedo, RAY_COL, sunRayFactor);
+
     float fogFactor = clamp((length(relPos) - near) / (far - near), 0.0, 1.0);
     float fogBrightness = mix(0.7, 2.0, smoothstep(0.0, 0.1, daylight));
     vec3 fogCol = toneMapReinhard(getAtmosphere(skyPos, shadowLightPos, SKY_COL, fogBrightness));
     albedo = mix(albedo, fogCol, fogFactor);
-
-#   if defined FORWARD_DEFERRED
-        backward = albedo;
-#   endif
 }
+
+#if defined FORWARD_DEFERRED
+    backward = albedo;
+#endif
 
     /* DRAWBUFFERS:05
      * 0 = gcolor

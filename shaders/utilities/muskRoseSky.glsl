@@ -90,7 +90,7 @@ vec3 getSky(const vec3 pos, const vec3 sunPos, const vec3 skyCol, const float da
 	vec4 clouds = renderClouds(pos, vec3(0.0), sunPos, smoothstep(0.0, 0.25, daylight), rain, time);
 	sky = toneMapReinhard(sky);
 	sky = mix(sky, vec3(1.0), getSun(cross(pos, sunPos) * 25.0));
-	sky = mix(sky, clouds.rgb, clouds.a * 0.8);
+	sky = mix(sky, clouds.rgb, clouds.a);
 
 	return sky;
 }
