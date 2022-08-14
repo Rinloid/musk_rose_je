@@ -25,7 +25,7 @@ float fBM(vec2 x, const float amp, const float lower, const float upper, const f
         }
 
         x         *= 2.0;
-        x.y       -= float(i + 1) * time * 0.04;
+        x.y       -= float(i + 1) * time * 0.05;
         amptitude *= 0.5;
     }
 

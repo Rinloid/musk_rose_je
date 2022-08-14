@@ -132,7 +132,7 @@ vec3 contrastFilter(const vec3 col, const float contrast) {
 #define GAMMA 2.2
 
 const float sunPathRotation = -40.0; // [-50  -45 -40  -35 -30 -25 -20 -15 -10 -5 0 5 10 15 20 25 30 35 40 45 50]
-const int shadowMapResolution = 2048; // [512 1024 2048 4096]
+const int shadowMapResolution = 1024; // [512 1024 2048 4096]
 const float shadowDistance = 512.0;
 const float occlShadowDepth = 0.6;
 

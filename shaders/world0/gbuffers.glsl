@@ -76,16 +76,18 @@ float blendAlpha = 1.0;
 #endif
 
 if (waterFlag > 0.5) {
-    albedo = vec4(0.0, 0.02, 0.03, 0.1);
+    albedo = vec4(0.0, 0.6, 0.9, 0.1);
 }
 
 #if defined GBUFFERS_WATER
     blendFlag = 1.0;
     blendAlpha = albedo.a;
-    vec3 reflectedSky = getSky(reflect(skyPos, worldNormal), shadowLightPos, SKY_COL, daylight, rainStrength, frameTimeCounter);
 
     if (waterFlag > 0.5) {
-        albedo.rgb = reflectedSky;
+        if (bool(smoothstep(0.8, 0.9, uv1.y))) {
+            vec3 reflectedSky = getSky(reflect(skyPos, worldNormal), shadowLightPos, SKY_COL, daylight, rainStrength, frameTimeCounter);
+            albedo.rgb = mix(albedo.rgb, reflectedSky, smoothstep(0.8, 0.9, uv1.y));
+        }
         albedo.a = 1.0;
     }
 #endif
