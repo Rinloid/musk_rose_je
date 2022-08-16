@@ -69,7 +69,7 @@ float getWaterWav(const vec2 pos, const float time) {
         /*
         ** The scale should become very small?
         */
-	    return wav * 0.0075;
+	    return wav * 0.006;
 #   else
         return 0.0;
 #   endif

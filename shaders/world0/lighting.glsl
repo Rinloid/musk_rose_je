@@ -18,9 +18,12 @@ uniform float rainStrength;
 uniform float frameTimeCounter;
 uniform float far, near;
 uniform float aspectRatio;
+uniform int moonPhase;
 
 varying vec2 uv;
 varying vec3 sunPos, moonPos, shadowLightPos;
+
+#include "/utilities/muskRoseWater.glsl"
 
 vec4 getViewPos(const mat4 projInv, const vec2 uv, const float depth) {
 	vec4 viewPos = projInv * vec4(vec3(uv, depth) * 2.0 - 1.0, 1.0);
@@ -159,7 +162,7 @@ float amnientLightFactor = 1.0;
 float dirLightFactor = 0.0;
 float emissiveLightFactor = 0.0;
 float clearWeather = 1.0 - rainStrength;
-vec3 sky = getSky(skyPos, shadowLightPos, SKY_COL, daylight, rainStrength, frameTimeCounter);
+vec3 sky = getSky(skyPos, shadowLightPos, SKY_COL, daylight, rainStrength, frameTimeCounter, moonPhase);
 vec3 skylightCol = vec3(0.0);
 vec3 sunlightCol = mix(SUNLIGHT_COL, SUNLIGHT_COL_SET, duskDawn);
 vec3 daylightCol = mix(sky, sunlightCol, 0.4);
@@ -183,7 +186,7 @@ vec3 light = vec3(0.0);
     vec4 shadowPos = getShadowPos(gbufferModelViewInverse, gbufferProjectionInverse, shadowModelView, shadowProjection, relPos, uv, depth, diffuse);
     if (diffuse > 0.0 && shadowPos.w > 0.0) {
         vec2 offset = vec2(0.0);
-        offset += hash12(floor(uv * 2048.0)) * 0.0005;
+        offset += hash12(floor(uv * 2048.0)) * 0.00025;
         if (texture2D(shadowtex0, shadowPos.xy + offset).r < shadowPos.z) {
             if (texture2D(shadowtex1, shadowPos.xy + offset).r < shadowPos.z) {
                 shadows = vec4(vec3(0.0), 0.0);
@@ -192,6 +195,8 @@ vec3 light = vec3(0.0);
             }
         }
     }
+    
+    shadows = mix(vec4(vec3(0.0), 0.0), shadows, smoothstep(0.0, 0.1, uv1.y));
 
     amnientLightFactor = mix(0.0, mix(0.9, 1.4, daylight), uv1.y);
     dirLightFactor = mix(0.0, diffuse, shadows.a);
@@ -200,8 +205,12 @@ vec3 light = vec3(0.0);
     ambientLightCol += 1.0 - max(max(ambientLightCol.r, ambientLightCol.g), ambientLightCol.b);
     skylightCol = getSkyLight(reflect(skyPos, normal), shadowLightPos, SKY_COL, daylight);
     if (blendFlag > 0.5) {
-        fresnel   = 40.0;
-        shininess = 500.0;
+        fresnel   = 100.0;
+        shininess = 1000.0;
+        if (waterFlag > 0.5) {
+            fresnel   = 100.0;
+            shininess = 500.0;
+        }
     }
     float specularLight = getSpecularLight(fresnel, shininess, shadowLightPos, relPos, normal);
 
@@ -232,7 +241,7 @@ vec3 light = vec3(0.0);
             sunRayFactor = mix(rayPos.w, sunRayFactor, exp2(length(relPosRay.xyz) * -0.0625));
         }
     }
-    sunRayFactor = min(sunRayFactor * clamp((length(relPos * (duskDawn * 4.0)) - near) / (far - near), 0.0, 1.0) * 0.5 + sunRayFactor * getMie(skyPos, sunPos), 1.0);
+    sunRayFactor = min(sunRayFactor * clamp((length(relPos * (duskDawn * 4.0)) - near) / (far - near), 0.0, 1.0) * 0.5 + sunRayFactor * getMie(skyPos, sunPos) * smoothstep(0.0, 0.1, daylight), 1.0);
 
     albedo = mix(albedo, RAY_COL, sunRayFactor);
 

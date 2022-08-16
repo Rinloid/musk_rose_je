@@ -31,7 +31,7 @@ vec2 pixelSize = 1.0 / screenResolution;
 float unfocused = smoothstep(0.0, 0.01, abs(depth - centreDepth));
 vec3 blurred = vec3(0.0, 0.0, 0.0);
 
-const int steps = 5;
+const int steps = 6;
 
 #if defined ENABLE_DOF
 	if (unfocused > 0.0) {
@@ -40,7 +40,7 @@ const int steps = 5;
 				vec2 offset = vec2(i, j) * pixelSize;
 				offset *= getRotationMatrix(float(steps * 2 * steps * 2));
 
-				blurred += texture2D(gcolor, uv + offset * unfocused * 1.5).rgb;
+				blurred += texture2D(gcolor, uv + offset * unfocused * 2.0).rgb;
 			}
 		} blurred /= float(steps * 2 * steps * 2);
 

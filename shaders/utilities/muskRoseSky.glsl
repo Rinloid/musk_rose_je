@@ -67,11 +67,13 @@ float diffuseSphere(const vec3 spherePosition, const float radius, const vec3 li
     }
 }
 
-float getMoon(const vec3 moonPosition, const float moonPhase, const float moonScale) {
+vec4 getMoon(const vec3 moonPosition, const float moonPhase, const float moonScale) {
 	vec3 lightPosition = vec3(sin(moonPhase), 0.0, -cos(moonPhase));
     float m = diffuseSphere(moonPosition, moonScale, lightPosition);
+	float moonTex = mix(1.0, 0.85, clamp(simplexNoise(moonPosition.xz * 0.1), 0.0, 1.0));
+	m = smoothstep(0.0, 0.3, m) * moonTex;
     
-	return m;
+	return vec4(mix(vec3(0.1, 0.05, 0.01), vec3(1.0, 0.95, 0.81), m), diffuseSphere(moonPosition, moonScale, vec3(0.0, 0.0, 1.0)));
 }
 
 vec3 toneMapReinhard(const vec3 color) {
@@ -85,12 +87,15 @@ vec3 toneMapReinhard(const vec3 color) {
 
 #include "muskRoseClouds.glsl"
 
-vec3 getSky(const vec3 pos, const vec3 sunPos, const vec3 skyCol, const float daylight, const float rain, const float time) {
+vec3 getSky(const vec3 pos, const vec3 sunPos, const vec3 skyCol, const float daylight, const float rain, const float time, const int moonPhase) {
 	vec3 sky = getAtmosphere(pos, sunPos, skyCol, mix(0.7, 2.0, smoothstep(0.0, 0.1, daylight)));
-	vec4 clouds = renderClouds(pos, vec3(0.0), sunPos, smoothstep(0.0, 0.25, daylight), rain, time);
+	vec4 clouds = renderClouds(pos, vec3(0.0), sunPos, smoothstep(0.0, 0.3, daylight), rain, time);
+	vec4 moon = getMoon(cross(pos, sunPos) * 127.0, getMoonPhase(moonPhase), 7.0);
 	sky = toneMapReinhard(sky);
-	sky = mix(sky, vec3(1.0), getSun(cross(pos, sunPos) * 25.0));
+	sky = mix(sky, vec3(1.0, 0.96, 0.82), getStars(pos) * smoothstep(0.4, 0.0, daylight));
+	sky = mix(sky, moon.rgb, moon.a * smoothstep(0.1, 0.0, daylight));
 	sky = mix(sky, clouds.rgb, clouds.a);
+	sky = mix(sky, vec3(1.0), getSun(cross(pos, sunPos) * 25.0) * smoothstep(0.0, 0.01, daylight));
 
 	return sky;
 }

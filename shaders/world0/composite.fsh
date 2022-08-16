@@ -6,6 +6,7 @@ uniform sampler2D gnormal;
 uniform sampler2D gaux1;
 uniform sampler2D gaux2;
 uniform sampler2D gaux3;
+uniform sampler2D gaux4;
 uniform mat4 gbufferModelView, gbufferModelViewInverse;
 uniform mat4 gbufferProjection, gbufferProjectionInverse;
 uniform float frameTimeCounter;
@@ -77,11 +78,13 @@ vec3 fragPos = relPos + cameraPosition;
 vec3 normal = texture2D(gnormal, uv).rgb * 2.0 - 1.0;
 float blendFlag = texture2D(gaux1, uv).b;
 float waterFlag = texture2D(gaux3, uv).r;
-float cosTheta = abs(dot(normalize(relPos), normal));
+float blendAlpha = texture2D(gaux3, uv).g;
+vec3 blendCol = texture2D(gaux4, uv).rgb;
+float cosTheta = 1.0 - abs(dot(normalize(relPos), normal));
 vec3 reflected = vec3(0.0);
 vec3 refracted = vec3(0.0);
 
-if (waterFlag > 0.5) {
+if (blendFlag > 0.5) {
     vec3 refPos = reflect(normalize(viewPos), mat3(gbufferModelView) * normal);
     vec3 rayTracePosHit = getRayTraceFactor(depthtex0, gbufferProjection, gbufferProjectionInverse, viewPos, refPos);
     
@@ -93,9 +96,15 @@ if (waterFlag > 0.5) {
     }
 
     reflected = ssr;
-    refracted = texture2D(gaux2, refract(vec3(uv, 1.0), getWaterWavNormal(getWaterParallax(viewPos, fragPos.xz, frameTimeCounter), frameTimeCounter) * 0.1, 1.0).xy).rgb;
+    refracted = texture2D(gaux2, uv.xy).rgb;
+    if (waterFlag > 0.5) {
+        refracted = texture2D(gaux2, refract(vec3(uv, 1.0), getWaterWavNormal(getWaterParallax(viewPos, fragPos.xz, frameTimeCounter), frameTimeCounter) * 0.1, 1.0).xy).rgb;
+    }
 
-    albedo = mix(reflected, refracted, cosTheta);
+    albedo = mix(refracted, reflected, max(blendAlpha, cosTheta));
+    if (waterFlag < 0.5) {
+        albedo = mix(blendCol, albedo, max(blendAlpha, cosTheta));
+    }
 }
 
     /* DRAWBUFFERS:0

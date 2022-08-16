@@ -8,6 +8,7 @@ uniform float rainStrength;
 uniform vec4 entityColor;
 uniform vec3 fogColor;
 uniform vec3 skyColor;
+uniform int moonPhase;
 
 varying vec2 uv0;
 varying vec2 uv1;
@@ -33,6 +34,17 @@ float fogify(const float x, const float w) {
 
 #define SKY_COL  vec3(0.4, 0.65, 1.0)
 
+vec3 getTexNormal(vec2 uv, float resolution, float scale) {
+	vec2 texStep = 1.0 / resolution * vec2(1.0);
+    float height = length(textureLod(texture, uv, 0.0).rgb);
+    vec2 dxy = height - vec2(length(textureLod(texture, uv + vec2(texStep.x, 0.0), 0.0).rgb),
+        length(textureLod(texture, uv + vec2(0.0, texStep.y), 0.0).rgb));
+    
+	return normalize(vec3(dxy * scale / texStep, 1.0));
+}
+
+const int texNormalResolution = 2048; // [1024 2048 4096]
+
 void main() {
 vec4 albedo =
 #if defined GBUFFERS_BASIC
@@ -53,11 +65,19 @@ if (waterFlag > 0.5) {
     worldNormal = normalize(getWaterWavNormal(getWaterParallax(viewPos, fragPos.xz, frameTimeCounter), frameTimeCounter) * tbnMatrix);
     worldNormal = mat3(gbufferModelViewInverse) * worldNormal;
 }
+#if defined GBUFFERS_WATER
+    else {
+        worldNormal = normalize(getTexNormal(uv0, float(texNormalResolution), 0.0002) * tbnMatrix);
+        worldNormal = mat3(gbufferModelViewInverse) * worldNormal;
+    }
+#endif
 vec3 skyPos = normalize(relPos);
 float cosTheta = abs(dot(normalize(relPos), worldNormal));
 float daylight = max(0.0, sin(sunPos.y));
 float blendFlag = 0.0;
 float blendAlpha = 1.0;
+vec3 blendCol = vec3(0.0);
+float puddle = smoothstep(0.5, 1.0, simplexNoise(fragPos.xz * 0.1)) * max(0.0, worldNormal.y);
 
 #if defined GBUFFERS_ENTITIES
     albedo.rgb = mix(albedo.rgb, entityColor.rgb, entityColor.a);
@@ -82,14 +102,13 @@ if (waterFlag > 0.5) {
 #if defined GBUFFERS_WATER
     blendFlag = 1.0;
     blendAlpha = albedo.a;
+    blendCol = albedo.rgb;
 
-    if (waterFlag > 0.5) {
-        if (bool(smoothstep(0.8, 0.9, uv1.y))) {
-            vec3 reflectedSky = getSky(reflect(skyPos, worldNormal), shadowLightPos, SKY_COL, daylight, rainStrength, frameTimeCounter);
-            albedo.rgb = mix(albedo.rgb, reflectedSky, smoothstep(0.8, 0.9, uv1.y));
-        }
-        albedo.a = 1.0;
+    if (bool(smoothstep(0.8, 0.9, uv1.y))) {
+        vec3 reflectedSky = getSky(reflect(skyPos, worldNormal), shadowLightPos, SKY_COL, daylight, rainStrength, frameTimeCounter, moonPhase);
+        albedo.rgb = mix(albedo.rgb, reflectedSky, smoothstep(0.8, 0.9, uv1.y));
     }
+    albedo.a = 1.0;
 #endif
 
 #if defined GBUFFERS_SHADOW
@@ -103,7 +122,7 @@ if (waterFlag > 0.5) {
 #endif
 
 #   if !defined GBUFFERS_SHADOW
-        /* DRAWBUFFERS:0246
+        /* DRAWBUFFERS:02467
         * 0 = gcolor
         * 1 = gdepth
         * 2 = gnormal
@@ -117,6 +136,7 @@ if (waterFlag > 0.5) {
         gl_FragData[1] = vec4((worldNormal + 1.0) * 0.5, 1.0); // gnormal
         gl_FragData[2] = vec4(uv1, blendFlag, 1.0); // gaux1
         gl_FragData[3] = vec4(waterFlag, blendAlpha, 0.0, 1.0); // gaux3
+        gl_FragData[4] = vec4(blendCol, 1.0); // gaux4
 
 #   else
         /* DRAWBUFFERS:0

@@ -41,7 +41,7 @@ float cloudMapShade(const vec2 pos, const float time, const float amp, const flo
 }
 
 #define ENABLE_CLOUDS
-// #define ENABLE_CLOUD_SHADING
+#define ENABLE_CLOUD_SHADING
 
 /*
  ** Generate volumetric clouds with piled 2D noise.
@@ -78,8 +78,7 @@ vec4 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const fl
                     inside += max(0.0, rayHeight - (rayPos.y - pos.y));
                 } inside /= float(raySteps);
 
-
-                clouds.rgb = mix(clouds.rgb + 0.1 / float(cloudSteps) * brightness, max(vec3(0.0), clouds.rgb - 0.5 / float(cloudSteps) * brightness), inside);
+                clouds.rgb = mix(min(clouds.rgb + 0.2 / float(cloudSteps) * brightness, vec3(1.0)), max(vec3(0.0), clouds.rgb - 0.3 / float(cloudSteps) * brightness), inside);
 #           endif
             amp += 1.0 / float(cloudSteps);
 
