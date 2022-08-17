@@ -40,7 +40,7 @@ const int steps = 6;
 				vec2 offset = vec2(i, j) * pixelSize;
 				offset *= getRotationMatrix(float(steps * 2 * steps * 2));
 
-				blurred += texture2D(gcolor, uv + offset * unfocused * 2.0).rgb;
+				blurred += texture2D(gcolor, uv + offset * unfocused).rgb;
 			}
 		} blurred /= float(steps * 2 * steps * 2);
 

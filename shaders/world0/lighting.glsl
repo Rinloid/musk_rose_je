@@ -19,6 +19,7 @@ uniform float frameTimeCounter;
 uniform float far, near;
 uniform float aspectRatio;
 uniform int moonPhase;
+uniform ivec2 eyeBrightnessSmooth;
 
 varying vec2 uv;
 varying vec3 sunPos, moonPos, shadowLightPos;
@@ -246,7 +247,7 @@ vec3 light = vec3(0.0);
     albedo = mix(albedo, RAY_COL, sunRayFactor);
 
     float fogFactor = clamp((length(relPos) - near) / (far - near), 0.0, 1.0);
-    float fogBrightness = mix(0.7, 2.0, smoothstep(0.0, 0.1, daylight));
+    float fogBrightness = mix(0.7, 2.0, smoothstep(0.0, 0.1, daylight) * float(eyeBrightnessSmooth.y / 240.0));
     vec3 fogCol = toneMapReinhard(getAtmosphere(skyPos, shadowLightPos, SKY_COL, fogBrightness));
     albedo = mix(albedo, fogCol, fogFactor);
 }
