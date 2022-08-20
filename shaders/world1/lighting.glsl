@@ -4,7 +4,6 @@
 #if defined FORWARD_FRAGMENT
 uniform mat4 gbufferModelView, gbufferModelViewInverse;
 uniform mat4 gbufferProjection, gbufferProjectionInverse;
-uniform mat4 shadowProjection, shadowModelView;
 uniform sampler2D gcolor;
 uniform sampler2D gnormal;
 uniform sampler2D gaux1;
@@ -20,10 +19,8 @@ uniform float far, near;
 uniform float aspectRatio;
 uniform int moonPhase;
 uniform ivec2 eyeBrightnessSmooth;
-uniform vec3 fogColor;
 
 varying vec2 uv;
-varying vec3 sunPos, moonPos, shadowLightPos;
 
 #include "/utilities/muskRoseWater.glsl"
 
@@ -109,7 +106,6 @@ vec3 viewPos = getViewPos(gbufferProjectionInverse, uv, depth).xyz;
 vec3 relPos  = getRelPos(gbufferModelViewInverse, gbufferProjectionInverse, uv, depth).xyz;
 vec3 fragPos = relPos + cameraPosition;
 vec3 skyPos = normalize(relPos);
-float diffuse = max(0.0, dot(shadowLightPos, normal));
 float ambientLightFactor = 1.0;
 float emissiveLightFactor = 0.0;
 vec3 ambientLightCol = vec3(1.0);
@@ -163,17 +159,10 @@ vec3 light = vec3(0.0);
 #endif /* defined FORWARD_FRAGMENT */
 
 #if defined FORWARD_VERTEX
-uniform mat4 gbufferModelView, gbufferModelViewInverse;
-uniform vec3 sunPosition, moonPosition, shadowLightPosition;
-
 varying vec2 uv;
-varying vec3 sunPos, moonPos, shadowLightPos;
 
 void main() {
 uv = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
-sunPos         = normalize(mat3(gbufferModelViewInverse) * mat3(gl_ModelViewMatrix) * sunPosition);
-moonPos        = normalize(mat3(gbufferModelViewInverse) * mat3(gl_ModelViewMatrix) * moonPosition);
-shadowLightPos = normalize(mat3(gbufferModelViewInverse) * mat3(gl_ModelViewMatrix) * shadowLightPosition);
 
 	gl_Position = ftransform();
 }

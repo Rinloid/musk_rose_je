@@ -13,7 +13,6 @@ uniform int moonPhase;
 varying vec2 uv0;
 varying vec2 uv1;
 varying vec4 col;
-varying vec3 sunPos, moonPos, shadowLightPos;
 varying vec3 viewPos;
 varying vec3 relPos;
 varying vec3 fragPos;
@@ -31,7 +30,6 @@ float fogify(const float x, const float w) {
 // #define DEBUG_WHITE
 
 #include "/utilities/muskRoseWater.glsl"
-#include "/utilities/muskRoseSky.glsl"
 
 #define SKY_COL  vec3(0.4, 0.65, 1.0)
 
@@ -80,7 +78,6 @@ if (rackFlag > 0.5) {
 
 vec3 skyPos = normalize(relPos);
 float cosTheta = abs(dot(normalize(relPos), worldNormal));
-float daylight = max(0.0, sin(sunPos.y));
 float blendFlag = 0.0;
 float blendAlpha = 1.0;
 vec3 blendCol = vec3(0.0);
@@ -163,13 +160,11 @@ attribute vec4 at_tangent;
 attribute vec3 mc_Entity;
 
 uniform mat4 gbufferModelView, gbufferModelViewInverse;
-uniform vec3 sunPosition, moonPosition, shadowLightPosition;
 uniform vec3 cameraPosition;
 
 varying vec2 uv0;
 varying vec2 uv1;
 varying vec4 col;
-varying vec3 sunPos, moonPos, shadowLightPos;
 varying vec3 viewPos;
 varying vec3 relPos;
 varying vec3 fragPos;
@@ -196,9 +191,6 @@ col =
 #else
     gl_Color;
 #endif
-sunPos = normalize(mat3(gbufferModelViewInverse) * sunPosition);
-moonPos = normalize(mat3(gbufferModelViewInverse) * moonPosition);
-shadowLightPos = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
 viewPos = (gl_ModelViewMatrix * gl_Vertex).xyz;
 relPos  = (gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex).xyz;
 fragPos = relPos + cameraPosition;
