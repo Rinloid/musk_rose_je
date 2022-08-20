@@ -19,7 +19,7 @@ const vec2 occlusionSamples[8] = vec2[8] (
  ** See: https://github.com/kayru/dssdo
 */
 float getSSAO(const vec3 viewPos, const mat4 projInv, const vec2 uv, const float aspectRatio, const sampler2D depthTex) {
-	#if defined ENABLE_AO
+	#ifdef ENABLE_AO
 		const int samples = occlusionSamples.length();
 		const float aoWeight = 1.0;
 		const float bias = 0.02;

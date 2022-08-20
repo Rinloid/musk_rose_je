@@ -1,0 +1,10 @@
+value.INFO.1 = by §6Rin§r
+
+option.INFO = Musk Rose Shaders v2.0
+option.INFO.comment = Twitter：§b@RinInReal§r
+option.sunPathRotation = 太陽／月の角度
+option.shadowMapResolution = 影の解像度
+option.shadowMapResolution.comment = 光線の品質にも影響します。
+option.centerDepthHalflife = 被写界深度の更新時間（ティック）
+option.SHADOW_BIAS = 影のバイアス
+option.SHADOW_BIAS.comment = 影に不具合が生じる場合、これを調節してください。

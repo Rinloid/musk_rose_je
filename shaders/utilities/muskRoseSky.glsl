@@ -50,7 +50,7 @@ float getSun(const vec3 pos) {
 }
 
 float getMoonPhase(const int phase) {
-	// 0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75
+	// [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75]
 	return float(phase) * 0.25 * 3.14;
 }
 
@@ -90,13 +90,18 @@ vec3 toneMapReinhard(const vec3 color) {
 vec3 getSky(const vec3 pos, const vec3 sunPos, const vec3 skyCol, const float daylight, const float rain, const float time, const int moonPhase) {
 	vec3 sky = getAtmosphere(pos, sunPos, skyCol, mix(0.7, 2.0, smoothstep(0.0, 0.1, daylight)));
 	vec4 clouds = renderClouds(pos, vec3(0.0), sunPos, smoothstep(0.0, 0.3, daylight), rain, time);
+#	ifdef ENABLE_CLOUD_SHADING
+		clouds.a *= 0.65;
+#	else
+		clouds.a *= 0.80;
+#	endif
 	vec4 moon = getMoon(cross(pos, sunPos) * 127.0, getMoonPhase(moonPhase), 7.0);
 	sky = toneMapReinhard(sky);
 	sky = mix(sky, vec3(1.0, 0.96, 0.82), getStars(pos) * smoothstep(0.4, 0.0, daylight));
+	sky = mix(sky, vec3(1.0), getSun(cross(pos, sunPos) * 25.0) * smoothstep(0.0, 0.01, daylight));
 	sky = mix(sky, moon.rgb, moon.a * smoothstep(0.1, 0.0, daylight));
 	sky = mix(sky, clouds.rgb, clouds.a);
-	sky = mix(sky, vec3(1.0), getSun(cross(pos, sunPos) * 25.0) * smoothstep(0.0, 0.01, daylight));
-
+	
 	return sky;
 }
 

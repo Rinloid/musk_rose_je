@@ -1,0 +1,10 @@
+value.INFO.1 = by §6Rin§r
+
+option.INFO = Musk Rose Shaders v2.0
+option.INFO.comment = Twitter: §b@RinInReal§r
+option.sunPathRotation = Sun/Moon Direction
+option.shadowMapResolution = Shadow Resolution
+option.shadowMapResolution.comment = It also affects the quality of sun rays.
+option.centerDepthHalflife = Depth of Field Update Time (Ticks)
+option.SHADOW_BIAS = Shadow Bias
+option.SHADOW_BIAS.comment = Increase or decrease this if you get shadow acne.

@@ -1,3 +1,6 @@
+#if !defined HASH_INCLUDED
+#define HASH_INCLUDED 1
+
 /*
  ** Hash without sine modded by Rin
  ** Original author: David Hoskins (MIT License)
@@ -63,3 +66,5 @@ vec3 hash33(const vec3 pos) {
 
     return fract((p.xxy + p.yxx) * p.zyx);
 }
+
+#endif /* !defined HASH_INCLUDED */

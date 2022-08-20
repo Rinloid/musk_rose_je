@@ -18,6 +18,7 @@ float fBM(vec2 x, const float amp, const float lower, const float upper, const f
     for (int i = 0; i < octaves; i++) {
         v += amptitude * (textureNoise(x) * 0.5 + 0.5);
 
+        /* Optimization */
         if (v >= upper) {
             break;
         } else if (v + amptitude <= lower) {
@@ -67,7 +68,11 @@ vec4 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const fl
 
             clouds.a += cloudMap(cloudPos, time, amp, rain, cloudOctaves);
             
-#           if defined ENABLE_CLOUD_SHADING
+#           ifdef ENABLE_CLOUD_SHADING
+                /* 
+                 ** Compute self-casting shadows of clouds with
+                 * a (sort of) volumetric ray marching!
+                */
                 vec3 rayStep = normalize(sunPos - pos) * rayStepSize;
                 vec3 rayPos = pos;
                 float inside = 0.0;
@@ -78,7 +83,7 @@ vec4 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const fl
                     inside += max(0.0, rayHeight - (rayPos.y - pos.y));
                 } inside /= float(raySteps);
 
-                clouds.rgb = mix(min(clouds.rgb + 0.2 / float(cloudSteps) * brightness, vec3(1.0)), max(vec3(0.0), clouds.rgb - 0.3 / float(cloudSteps) * brightness), inside);
+                clouds.rgb = mix((clouds.rgb + 0.2 / float(cloudSteps) * brightness), max(vec3(0.0), clouds.rgb - 0.5 / float(cloudSteps) * brightness), inside);
 #           endif
             amp += 1.0 / float(cloudSteps);
 
@@ -87,7 +92,7 @@ vec4 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const fl
 
     clouds.a = mix(clouds.a, 0.0, drawSpace);
     
-#   if defined ENABLE_CLOUDS
+#   ifdef ENABLE_CLOUDS
         return clouds;
 #   else
         return vec4(0.0);

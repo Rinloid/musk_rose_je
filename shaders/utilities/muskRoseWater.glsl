@@ -1,7 +1,6 @@
 #if !defined WATER_INCLUDED
 #define WATER_INCLUDED 1
 
-
 /*
  ** Simplex Noise modded by Rin
  ** Original author: Ashima Arts (MIT License)
@@ -65,9 +64,9 @@ float getWaterWav(const vec2 pos, const float time) {
         wav += simplexNoise(vec2(p.x, p.y)) * 2.0;
 #   endif
 
-#   if defined ENABLE_WATER_WAVES
+#   ifdef ENABLE_WATER_WAVES
         /*
-        ** The scale should become very small?
+         ** The scale should become very small?
         */
 	    return wav * 0.006;
 #   else
@@ -75,14 +74,14 @@ float getWaterWav(const vec2 pos, const float time) {
 #   endif
 }
 
-#define WATER_PARALLAX
+#define ENABLE_WATER_PARALLAX
 
 /*
  ** Generate a parallax effect for water (currently crude).
 */
 vec2 getWaterParallax(const vec3 viewPos, const vec2 pos, const float time) {
     vec2 paraPos = pos;
-#   if defined WATER_PARALLAX
+#   ifdef ENABLE_WATER_PARALLAX
         float waterHeight = getWaterWav(pos, time);
         paraPos += waterHeight * viewPos.xy;
 #   endif

@@ -155,6 +155,7 @@ attribute vec3 mc_Entity;
 uniform mat4 gbufferModelView, gbufferModelViewInverse;
 uniform vec3 sunPosition, moonPosition, shadowLightPosition;
 uniform vec3 cameraPosition;
+uniform float frameTimeCounter;
 
 varying vec2 uv0;
 varying vec2 uv1;
@@ -202,7 +203,19 @@ waterFlag =
     0.0;
 #endif
 
-	gl_Position = ftransform();
+#define ENABLE_FOLIAGE_WAVES
+
+#if defined ENABLE_FOLIAGE_WAVES && (defined GBUFFERS_TERRAIN || defined GBUFFERS_SHADOW)
+    if (int(mc_Entity.x) == 10003) {
+        vec3 wavPos = fragPos;
+        vec2 wav = vec2(sin(frameTimeCounter * 2.5 + 2.0 * wavPos.x + wavPos.y), sin(frameTimeCounter * 2.5 + 2.0 * wavPos.z + wavPos.y));
+        float wind = sin(frameTimeCounter * 0.5 + wavPos.x * 0.02 + wavPos.y * 0.08 + wavPos.z * 0.1);
+
+        relPos.zx += wav * 0.025 * wind * smoothstep(0.7, 1.0, uv1.y);
+    }
+#endif
+
+	gl_Position = gl_ProjectionMatrix * (gbufferModelView * vec4(relPos, 1.0));
 #   if defined GBUFFERS_SHADOW
         gl_Position.xyz = distort(gl_Position.xyz);
 #   endif

@@ -33,7 +33,7 @@ vec3 blurred = vec3(0.0, 0.0, 0.0);
 
 const int steps = 6;
 
-#if defined ENABLE_DOF
+#ifdef ENABLE_DOF
 	if (unfocused > 0.0) {
 		for (int i = -steps; i < steps; i++) {
 			for (int j = -steps; j < steps; j++) {
