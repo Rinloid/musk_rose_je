@@ -46,7 +46,7 @@ float getStars(const vec3 pos) {
 }
 
 float getSun(const vec3 pos) {
-	return inversesqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z);
+	return 1.0 / length(pos);
 }
 
 float getMoonPhase(const int phase) {
@@ -95,10 +95,17 @@ vec3 toneMapReinhard(const vec3 color) {
 vec3 getSky(const vec3 pos, const vec3 sunPos, const vec3 moonPos, const vec3 skyCol, const float daylight, const float rain, const float time, const int moonPhase) {
 	vec3 sky = getAtmosphere(pos, sunPos, skyCol, mix(0.7, 2.0, smoothstep(0.0, 0.1, daylight)));
 	vec4 moon = getMoon(cross(pos, moonPos) * 127.0, getMoonPhase(moonPhase), 7.0);
-	vec2 clouds = renderClouds(pos, vec3(0), sunPos, daylight, rain, time);
+	moon = mix(moon, vec4(0.0), rain);
+	vec2 clouds = renderClouds(pos, cameraPosition, sunPos, daylight, rain, time);
+	float sunTrim =
+#	if !defined WORLD1
+		smoothstep(0.1, 0.0, distance(pos, sunPos));
+#	else
+		1.0;
+	#endif
 	sky = toneMapReinhard(sky);
 	sky = mix(sky, moon.rgb, moon.a * smoothstep(0.1, 0.0, daylight) * smoothstep(0.2, 0.1, distance(pos, moonPos)));
-	sky += mix(vec3(0.0), vec3(daylight), getSun(cross(pos, sunPos) * 25.0) * smoothstep(0.0, 0.01, daylight) * smoothstep(0.1, 0.0, distance(pos, sunPos)));
+	sky += mix(vec3(0.0), vec3(daylight), getSun(cross(pos, sunPos) * 25.0) * smoothstep(0.0, 0.01, daylight) * sunTrim);
 	sky = mix(sky, vec3(1.0, 0.96, 0.82), getStars(pos) * smoothstep(0.4, 0.0, daylight));
 
 	float cloudBrightness = clamp(dot(sky, vec3(0.22, 0.707, 0.071)), 0.0, 1.0);
@@ -106,14 +113,17 @@ vec3 getSky(const vec3 pos, const vec3 sunPos, const vec3 moonPos, const vec3 sk
 	cloudCol = mix(cloudCol, vec3(dot(cloudCol, vec3(0.22, 0.707, 0.071))), 0.4);
 
 	sky = mix(sky, mix(cloudCol, cloudCol * 0.65, clouds.y), clouds.x * 0.65);
+
+	sky = mix(sky, vec3(dot(sky, vec3(0.22, 0.707, 0.071))), rain);
 	
 	return sky;
 }
 
-vec3 getSkyLight(const vec3 pos, const vec3 sunPos, const vec3 skyCol, const float daylight) {
+vec3 getSkyLight(const vec3 pos, const vec3 sunPos, const vec3 skyCol, const float daylight, const float rain) {
 	vec3 sky = getAtmosphere(pos, sunPos, skyCol, mix(0.7, 2.0, smoothstep(0.0, 0.1, daylight)));
 	sky = toneMapReinhard(sky);
-	sky = mix(sky, vec3(1.0), getSun(cross(pos, sunPos) * 25.0));
+
+	sky = mix(sky, vec3(dot(sky, vec3(0.22, 0.707, 0.071))), rain);
 
 	return sky;
 }
