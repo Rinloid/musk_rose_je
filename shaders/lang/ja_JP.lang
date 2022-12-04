@@ -1,0 +1,35 @@
+profile.MINIMUM=最小限
+profile.MAXIMUM=最大限
+profile.comment=最小限：低スペックのパソコン向け。. 最大限：最大クオリティ。
+
+screen.LIGHTING=ライティング
+screen.MATERIALS=マテリアル
+screen.SKY=空
+screen.SCREEN_EFFECTS=画面の効果
+screen.MISC=その他
+
+option.ENABLE_SUNRAYS=太陽光線
+option.ENABLE_SUNRAYS.comment=別名 God’s Ray。
+option.ENABLE_FOG=霧
+option.ENABLE_FOG.comment=大気をベースに、霧を生成します。
+option.ENABLE_AO=アンビエントオクルージョン
+option.ENABLE_AO.comment=シェーダーによって生成された SSAO。
+option.ENABLE_WATER_WAVES=水の波
+option.ENABLE_WATER_PARALLAX=波の視差
+option.ENABLE_WATER_PARALLAX.comment=これは試験的な機能です。
+option.ENABLE_WATER_CAUSTICS=水中に差し込む光
+option.ENABLE_WATER_REFRACTION=水の屈折
+option.ENABLE_RAIN_PUDDLES=水たまり
+option.ENABLE_RAIN_PUDDLES.comment=これはラグいです！
+option.ENABLE_RAIN_RIPPLES=水たまりの波紋
+option.ENABLE_FOLIAGE_WAVES=草木の揺れ
+option.ENABLE_CLOUDS=雲
+option.ENABLE_CLOUD_SHADING=雲のシェーディング
+option.ENABLE_DOF=被写界深度
+option.ENABLE_DOF.comment=焦点の定まっていない物体をぼかします。カメラのピンボケのようなものです。
+option.shadowMapResolution=影の解像度
+option.SHADOW_BIAS=影のバイアス
+option.SHADOW_BIAS.comment=影にバグが見られる場合、この値を調節してください。
+option.sunPathRotation=太陽／月の角度
+option.centerDepthHalflife=被写界深度の更新時間
+option.GAMMA=ガンマ
