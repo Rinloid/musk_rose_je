@@ -15,7 +15,7 @@ mat2 getRotationMatrix(const float angle) {
 
 const float centerDepthHalflife = 2.0; // [0.0 1.0 2.0 3.0 4.0 5.0]
 
-#define ENABLE_DOF
+// #define ENABLE_DOF
 
 void main() {
 vec3 albedo = texture2D(gcolor, uv).rgb;
@@ -35,7 +35,7 @@ vec3 blurred = vec3(0.0, 0.0, 0.0);
 
 const int steps = 6;
 
-#if defined ENABLE_DOF
+#ifdef ENABLE_DOF
 	if (unfocused > 0.0) {
 		for (int i = -steps; i < steps; i++) {
 			for (int j = -steps; j < steps; j++) {
@@ -49,7 +49,6 @@ const int steps = 6;
 		albedo = blurred;
 	}
 #endif
-
 
     /* DRAWBUFFERS:0
      * 0 = gcolor
@@ -75,5 +74,4 @@ uv = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 	gl_Position = ftransform();
 }
 #endif /* defined BLURRING_VERTEX */
-
 #endif /* !defined BLURRING_INCLUDED */

@@ -13,6 +13,7 @@ uniform sampler2D colortex8;
 uniform mat4 gbufferModelView, gbufferModelViewInverse;
 uniform mat4 gbufferProjection, gbufferProjectionInverse;
 uniform float frameTimeCounter;
+uniform float far, near;
 uniform vec3 cameraPosition;
 uniform int isEyeInWater;
 
@@ -73,6 +74,8 @@ vec3 getRayTraceFactor(const sampler2D depthTex, const mat4 proj, const mat4 pro
     return rayTracePosHit;
 }
 
+#define ENABLE_WATER_REFRACTION
+
 void main() {
 vec3 albedo = texture2D(gcolor, uv).rgb;
 float depth = texture2D(depthtex0, uv).r;
@@ -101,9 +104,11 @@ if (blendFlag > 0.5) {
 
     reflected = ssr;
     refracted = texture2D(gaux2, uv.xy).rgb;
-    if (waterFlag > 0.5) {
-        refracted = texture2D(gaux2, refract(vec3(uv, 1.0), getWaterWavNormal(getWaterParallax(viewPos, fragPos.xz, frameTimeCounter), frameTimeCounter) * 0.15, 1.0).xy).rgb;
-    }
+    #ifdef ENABLE_WATER_REFRACTION
+        if (waterFlag > 0.5) {
+            refracted = texture2D(gaux2, refract(vec3(uv, 1.0), getWaterWavNormal(getWaterParallax(viewPos, fragPos.xz, frameTimeCounter), frameTimeCounter) * 0.175, 1.0).xy).rgb;
+        }
+    #endif
 
     albedo = mix(refracted, reflected, max(blendAlpha, cosTheta));
     if (waterFlag < 0.5) {
@@ -134,5 +139,4 @@ uv = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 	gl_Position = ftransform();
 }
 #endif /* defined REFLECTION_VERTEX */
-
 #endif /* REFLECTTION_INCLUCDED */

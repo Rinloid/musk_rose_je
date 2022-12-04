@@ -2,11 +2,12 @@
 #define GBUFFERS_INCLUDED 1
 
 #if defined GBUFFERS_FRAGMENT
-#define REFLECTED 1
 
 uniform sampler2D texture;
 uniform sampler2D normals;
 uniform sampler2D specular;
+uniform sampler2D depthtex0;
+uniform sampler2D depthtex1;
 uniform mat4 gbufferModelView, gbufferModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
 uniform float viewWidth, viewHeight;
@@ -15,6 +16,7 @@ uniform float rainStrength;
 uniform vec4 entityColor;
 uniform vec3 fogColor;
 uniform vec3 skyColor;
+uniform vec3 cameraPosition;
 uniform int moonPhase;
 uniform int isEyeInWater;
 
@@ -40,18 +42,14 @@ float fogify(const float x, const float w) {
 #include "/utilities/muskRoseWater.glsl"
 #include "/utilities/muskRoseSky.glsl"
 
-#define SKY_COL vec3(0.4, 0.65, 1.0)
+#if !defined WORLD1
+#   define SKY_COL  vec3(0.4, 0.65, 1.0)
+#else
+#   define SKY_COL  vec3(0.6, 0.8, 1.0)
+#endif
 
-vec3 getTexNormal(vec2 uv, float resolution, float scale) {
-	vec2 texStep = 1.0 / resolution * vec2(1.0);
-    float height = length(textureLod(texture, uv, 0.0).rgb);
-    vec2 dxy = height - vec2(length(textureLod(texture, uv + vec2(texStep.x, 0.0), 0.0).rgb),
-        length(textureLod(texture, uv + vec2(0.0, texStep.y), 0.0).rgb));
-    
-	return normalize(vec3(dxy * scale / texStep, 1.0));
-}
-
-const int texNormalResolution = 2048; // [1024 2048 4096]
+// #define ENABLE_RAIN_PUDDLES
+#define ENABLE_WATER_CAUSTICS
 
 void main() {
 vec4 albedo =
@@ -65,15 +63,33 @@ vec4 albedo =
 vec2 uvp = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
 vec4 labPBRSpecular = texture2D(specular, uv0);
 vec3 labPBRNormal = vec3(texture2D(normals, uv0).rg * 2.0 - 1.0, sqrt(1.0 - dot(texture2D(normals, uv0).rg, texture2D(normals, uv0).rg)));
-vec3 texNormal = getTexNormal(uv0, float(texNormalResolution), 0.0003);
 vec3 worldNormal =
 #if !defined GBUFFERS_BASIC
     mat3(gbufferModelViewInverse) * normalize(labPBRNormal * tbnMatrix);
 #else
     vec3(0.0);
 #endif
-if (waterFlag > 0.5) {
-    worldNormal = normalize(getWaterWavNormal(getWaterParallax(viewPos, fragPos.xz, frameTimeCounter), frameTimeCounter) * tbnMatrix);
+
+float clearWeather = 
+#if defined WORLD0
+    1.0 - rainStrength;
+#else
+    1.0;
+#endif
+
+float puddle =
+#ifdef ENABLE_RAIN_PUDDLES
+    max(0.0, worldNormal.y) * (1.0 - waterFlag) * smoothstep(0.96, 0.98, uv1.y) * (1.0 - clearWeather);
+#else
+    0.0;
+#endif
+puddle = smoothstep(0.1, 1.0, puddle);
+
+if (waterFlag > 0.5 || puddle > 0.0) {
+    vec3 waterNormal = normalize(getWaterWavNormal(getWaterParallax(viewPos, fragPos.xz, frameTimeCounter), frameTimeCounter) * tbnMatrix);
+    vec3 puddleNormal = normalize(getRippleNormal(fragPos.xz, frameTimeCounter) * tbnMatrix);
+
+    worldNormal = waterFlag > 0.5 ? waterNormal : puddleNormal;
     worldNormal = mat3(gbufferModelViewInverse) * worldNormal;
 }
 
@@ -83,7 +99,8 @@ float daylight = max(0.0, sin(sunPos.y));
 float blendFlag = 0.0;
 float blendAlpha = 1.0;
 vec3 blendCol = vec3(0.0);
-float puddle = smoothstep(0.5, 1.0, simplexNoise(fragPos.xz * 0.1)) * max(0.0, worldNormal.y);
+
+puddle *= (1.0 - cosTheta);
 
 #if defined GBUFFERS_ENTITIES
     albedo.rgb = mix(albedo.rgb, entityColor.rgb, entityColor.a);
@@ -105,38 +122,56 @@ if (waterFlag > 0.5) {
     albedo = vec4(0.24, 0.41, 0.56, 0.1);
 }
 
-#if defined GBUFFERS_WATER
-    blendFlag = 1.0;
-    blendAlpha = albedo.a;
-    blendCol = albedo.rgb;
-
-    if (bool(smoothstep(0.8, 0.9, uv1.y))) {
-        vec3 reflectedSky = getSky(reflect(skyPos, worldNormal), shadowLightPos, moonPos, SKY_COL, daylight, rainStrength, frameTimeCounter, moonPhase);
-        albedo.rgb = mix(albedo.rgb, reflectedSky, smoothstep(0.8, 0.9, uv1.y));
-    }
-    albedo.a = 1.0;
-#else
-    if (0.9 <= labPBRSpecular.g) {
+#if !defined WORLDM1
+#   if defined GBUFFERS_WATER
         blendFlag = 1.0;
-        blendAlpha = labPBRSpecular.g / 255.0;
+        blendAlpha = albedo.a;
         blendCol = albedo.rgb;
 
         if (bool(smoothstep(0.8, 0.9, uv1.y))) {
-            vec3 reflectedSky = getSky(reflect(skyPos, worldNormal), shadowLightPos, moonPos, SKY_COL, daylight, rainStrength, frameTimeCounter, moonPhase);
-            albedo.rgb = mix(albedo.rgb, reflectedSky, smoothstep(0.8, 0.9, uv1.y));
+            vec3 reflectedSky = 
+#               if !defined WORLDM1
+                    getSky(reflect(skyPos, worldNormal), shadowLightPos, moonPos, SKY_COL, daylight, 1.0 - clearWeather, frameTimeCounter, moonPhase);
+#               else
+                    fogColor;
+#               endif
+            albedo.rgb = mix(albedo.rgb, reflectedSky, smoothstep(0.75, 0.8, uv1.y));
         }
-    }
+        albedo.a = 1.0;
+    #else
+        if (0.9 <= labPBRSpecular.g || 0.0 < puddle) {
+            blendFlag = 1.0;
+            blendAlpha = labPBRSpecular.g / 255.0;
+            blendCol = albedo.rgb;
+
+            if (bool(smoothstep(0.8, 0.9, uv1.y))) {
+                vec3 reflectedSky = 
+#               if !defined WORLDM1
+                    getSky(reflect(skyPos, worldNormal), shadowLightPos, moonPos, SKY_COL, daylight, 1.0 - clearWeather, frameTimeCounter, moonPhase);
+#               else
+                    fogColor;
+#               endif
+                albedo.rgb = mix(albedo.rgb, reflectedSky, smoothstep(0.8, 0.9, uv1.y));
+            }
+        }
+#   endif
 #endif
 
 #if defined GBUFFERS_SHADOW
     if (waterFlag > 0.5) {
-        albedo.rgb = vec3(0.4, 0.8, 1);
+        albedo.rgb = vec3(0.1, 0.2, 0.4);
+        #ifdef ENABLE_WATER_CAUSTICS
+            float causticFactor = getWaterWav(fragPos.xz, frameTimeCounter) * 35.0;
+            causticFactor = causticFactor * causticFactor;
+            albedo.rgb = min(albedo.rgb + causticFactor, vec3(1.0));
+        #endif
     }
 #endif
 
 #if defined DEBUG_WHITE
     albedo.rgb = vec3(1.0);
 #endif
+
 #   if !defined GBUFFERS_SHADOW
         /* DRAWBUFFERS:024678
         * 0 = gcolor
@@ -170,6 +205,8 @@ attribute vec4 at_tangent;
 attribute vec3 mc_Entity;
 
 uniform mat4 gbufferModelView, gbufferModelViewInverse;
+uniform mat4 shadowProjection, shadowModelView;
+uniform mat4 shadowProjectionInverse, shadowModelViewInverse;
 uniform vec3 sunPosition, moonPosition, shadowLightPosition;
 uniform vec3 cameraPosition;
 uniform float frameTimeCounter;
@@ -207,7 +244,12 @@ sunPos = normalize(mat3(gbufferModelViewInverse) * sunPosition);
 moonPos = normalize(mat3(gbufferModelViewInverse) * moonPosition);
 shadowLightPos = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
 viewPos = (gl_ModelViewMatrix * gl_Vertex).xyz;
-relPos  = (gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex).xyz;
+relPos  = 
+#if !defined GBUFFERS_SHADOW
+    (gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex).xyz;
+#else
+    (shadowModelViewInverse * shadowProjectionInverse * ftransform()).xyz;
+#endif
 fragPos = relPos + cameraPosition;
 tangent   = normalize(gl_NormalMatrix * at_tangent.xyz);
 binormal  = normalize(gl_NormalMatrix * cross(at_tangent.xyz, gl_Normal.xyz) * at_tangent.w);
@@ -222,19 +264,21 @@ waterFlag =
 
 #define ENABLE_FOLIAGE_WAVES
 
-#if defined ENABLE_FOLIAGE_WAVES && (defined GBUFFERS_TERRAIN || defined GBUFFERS_SHADOW)
-    if (int(mc_Entity.x) == 10003) {
-        vec3 wavPos = fragPos;
-        vec2 wav = vec2(sin(frameTimeCounter * 2.5 + 2.0 * wavPos.x + wavPos.y), sin(frameTimeCounter * 2.5 + 2.0 * wavPos.z + wavPos.y));
-        float wind = sin(frameTimeCounter * 0.5 + wavPos.x * 0.02 + wavPos.y * 0.08 + wavPos.z * 0.1);
+#ifdef ENABLE_FOLIAGE_WAVES
+#   if defined GBUFFERS_TERRAIN || defined GBUFFERS_SHADOW
+        if (int(mc_Entity.x) == 10003) {
+            vec3 wavPos = fragPos;
+            vec2 wav = vec2(sin(frameTimeCounter * 2.5 + 2.0 * wavPos.x + wavPos.y), sin(frameTimeCounter * 2.5 + 2.0 * wavPos.z + wavPos.y));
+            float wind = sin(frameTimeCounter * 0.5 + wavPos.x * 0.02 + wavPos.y * 0.08 + wavPos.z * 0.1);
 
-        relPos.zx += wav * 0.025 * wind * smoothstep(0.7, 1.0, uv1.y);
-    }
+            relPos.zx += wav * 0.025 * wind * smoothstep(0.7, 1.0, uv1.y);
+        }
+#   endif
 #endif
 
 	gl_Position = gl_ProjectionMatrix * (gbufferModelView * vec4(relPos, 1.0));
 #   if defined GBUFFERS_SHADOW
-        gl_Position.xyz = distort(gl_Position.xyz);
+        gl_Position.xyz = distort((shadowProjection * shadowModelView*vec4(relPos, 1.0)).xyz);
 #   endif
 }
 #endif /* defined GBUFFERS_VERTEX */
