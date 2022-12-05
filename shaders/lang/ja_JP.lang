@@ -1,6 +1,6 @@
 profile.MINIMUM=最小限
 profile.MAXIMUM=最大限
-profile.comment=最小限：低スペックのパソコン向け。. 最大限：最大クオリティ。
+profile.comment=最小限：最低品質。低スペックのパソコン向け。. 最大限：最大クオリティ。
 
 screen.LIGHTING=ライティング
 screen.MATERIALS=マテリアル
@@ -27,9 +27,13 @@ option.ENABLE_CLOUDS=雲
 option.ENABLE_CLOUD_SHADING=雲のシェーディング
 option.ENABLE_DOF=被写界深度
 option.ENABLE_DOF.comment=焦点の定まっていない物体をぼかします。カメラのピンボケのようなものです。
+option.ENABLE_BLOOM=ブルーム
 option.shadowMapResolution=影の解像度
 option.SHADOW_BIAS=影のバイアス
 option.SHADOW_BIAS.comment=影にバグが見られる場合、この値を調節してください。
 option.sunPathRotation=太陽／月の角度
 option.centerDepthHalflife=被写界深度の更新時間
 option.GAMMA=ガンマ
+option.vanillaAOIntensity=バニラ AO の強さ
+option.shaderAOIntensity=シェーダーによる AO の強さ
+option.occlShadowBrightness=AO の影の明るさ

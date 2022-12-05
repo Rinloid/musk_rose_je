@@ -10,6 +10,7 @@ uniform sampler2D gnormal;
 uniform sampler2D gaux1;
 uniform sampler2D gaux3;
 uniform sampler2D colortex8;
+uniform sampler2D colortex9;
 uniform sampler2D depthtex0;
 uniform sampler2D shadowtex0;
 uniform sampler2D shadowtex1;
@@ -151,7 +152,9 @@ vec3 contrastFilter(const vec3 col, const float contrast) {
 const float sunPathRotation = -40.0; // [-50  -45 -40  -35 -30 -25 -20 -15 -10 -5 0 5 10 15 20 25 30 35 40 45 50]
 const int shadowMapResolution = 2048; // [512 1024 2048 4096]
 const float shadowDistance = 512.0;
-const float occlShadowDepth = 0.6;
+const float vanillaAOIntensity = 1.2; // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+const float shaderAOIntensity = 0.2; // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+const float occlShadowBrightness = 0.2; // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 #define ENABLE_SUNRAYS
 #define ENABLE_FOG
@@ -161,6 +164,7 @@ vec3 albedo = texture2D(gcolor, uv).rgb;
 #if defined FORWARD_DEFERRED
     vec3 backward = albedo;
 #endif
+vec3 bloom = texture2D(colortex9, uv).rgb;
 vec3 normal = texture2D(gnormal, uv).rgb * 2.0 - 1.0;
 vec2 uv1 = texture2D(gaux1, uv).rg;
 float blendFlag = texture2D(gaux1, uv).b;
@@ -199,13 +203,15 @@ vec3 sunlightCol = mix(SUNLIGHT_COL, SUNLIGHT_COL_SET, duskDawn);
 vec3 daylightCol = mix(sky, sunlightCol, 0.4);
 vec3 ambientLightCol = vec3(1.0);
 vec4 shadows = vec4(vec3(diffuse), 1.0);
-float ao =
+float vanillaAO = texture2D(gaux3, uv).b * vanillaAOIntensity;
+float shaderAO = getSSAO(viewPos, gbufferProjectionInverse, uv, aspectRatio, depthtex0) * shaderAOIntensity;
+float totalAO =
 #ifdef ENABLE_AO
-    getSSAO(viewPos, gbufferProjectionInverse, uv, aspectRatio, depthtex0);
+    clamp(vanillaAO + shaderAO, 0.0, 1.0);
 #else
     0.0;
 #endif
-float occlShadow = mix(1.0, occlShadowDepth, ao);
+float occlShadow = mix(1.0, occlShadowBrightness, totalAO);
 float fresnel = texture2D(colortex8, uv).r * 100.0;
 float shininess = texture2D(colortex8, uv).r * 500.0;
 
@@ -214,6 +220,13 @@ vec3 light = vec3(0.0);
 #if defined FORWARD_DEFERRED
     if (depth == 1.0) {
         albedo = sky;
+        float sunTrim =
+#   	if !defined WORLD1
+            smoothstep(0.1, 0.0, distance(skyPos, sunPos));
+#   	else
+            1.0;
+        #endif
+        bloom += getSun(cross(skyPos, sunPos) * 25.0) * smoothstep(0.0, 0.01, daylight) * sunTrim;
     } else
 #elif defined FORWARD_COMPOSITE
     if (blendFlag > 0.5)
@@ -277,7 +290,9 @@ vec3 light = vec3(0.0);
     light += ((normalize(light) + 1.0) * 0.5 - (1.0 - shadows.rgb)) * (1.0 - shadows.a * diffuse) * light * (waterFlag > 0.5 ? blendAlpha : 1.0);
 
 #   if !defined WORLDM1
-        light += light * specularLight * dirLightFactor * daylight * clearWeather;
+        vec3 totalSpecular = light * specularLight * dirLightFactor * daylight * clearWeather;
+        light += totalSpecular;
+        bloom += totalSpecular;
 #   endif
 
     albedo = pow(albedo, vec3(GAMMA));
@@ -338,7 +353,7 @@ vec3 light = vec3(0.0);
     backward = albedo;
 #endif
 
-    /* DRAWBUFFERS:05
+    /* DRAWBUFFERS:059
      * 0 = gcolor
      * 1 = gdepth
      * 2 = gnormal
@@ -352,6 +367,7 @@ vec3 light = vec3(0.0);
 #   if defined FORWARD_DEFERRED
     gl_FragData[1] = vec4(backward, 1.0); // gaux2
 #   endif
+    gl_FragData[2] = vec4(bloom, 1.0); // colortex9
 }
 #endif /* defined FORWARD_FRAGMENT */
 

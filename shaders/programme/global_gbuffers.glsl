@@ -48,6 +48,8 @@ float fogify(const float x, const float w) {
 #   define SKY_COL  vec3(0.6, 0.8, 1.0)
 #endif
 
+const float ambientOcclusionLevel = 1.0;
+
 // #define ENABLE_RAIN_PUDDLES
 #define ENABLE_WATER_CAUSTICS
 
@@ -58,8 +60,17 @@ vec4 albedo =
 #elif defined GBUFFERS_SKY
     vec4(vec3(0.0), 1.0);
 #else
-    texture2D(texture, uv0) * col;
+    texture2D(texture, uv0) * vec4(vec3(1.0), col.a);
 #endif
+#if defined GBUFFERS_TERRAIN
+    if (abs(col.r - col.g) > 0.001 || abs(col.g - col.b) > 0.001) {
+        albedo.rgb *= normalize(col.rgb);
+    }
+#elif !defined GBUFFERS_WATER
+    albedo.rgb *= col.rgb;
+#endif
+vec3 bloom = vec3(0.0);
+float vanillaAO = 1.0 - (col.g * 2.0 - (col.r < col.b ? col.r : col.b));
 vec2 uvp = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
 vec4 labPBRSpecular = texture2D(specular, uv0);
 vec3 labPBRNormal = vec3(texture2D(normals, uv0).rg * 2.0 - 1.0, sqrt(1.0 - dot(texture2D(normals, uv0).rg, texture2D(normals, uv0).rg)));
@@ -173,7 +184,7 @@ if (waterFlag > 0.5) {
 #endif
 
 #   if !defined GBUFFERS_SHADOW
-        /* DRAWBUFFERS:024678
+        /* DRAWBUFFERS:0246789
         * 0 = gcolor
         * 1 = gdepth
         * 2 = gnormal
@@ -186,9 +197,10 @@ if (waterFlag > 0.5) {
         gl_FragData[0] = albedo; // gcolor
         gl_FragData[1] = vec4((worldNormal + 1.0) * 0.5, 1.0); // gnormal
         gl_FragData[2] = vec4(uv1, blendFlag, 1.0); // gaux1
-        gl_FragData[3] = vec4(waterFlag, blendAlpha, 0.0, 1.0); // gaux3
+        gl_FragData[3] = vec4(waterFlag, blendAlpha, vanillaAO, 1.0); // gaux3
         gl_FragData[4] = vec4(blendCol, 1.0); // gaux4
         gl_FragData[5] = labPBRSpecular; // colortex8
+        gl_FragData[6] = vec4(bloom, 1.0); // colortex9
 
 #   else
         /* DRAWBUFFERS:0

@@ -1,6 +1,6 @@
 profile.MINIMUM=Minimum
 profile.MAXIMUM=Maximum
-profile.comment=Minimum: For low-end devices. Maximum: Maximum Musk Rose Experience
+profile.comment=Minimum: Cheapest Musk Rose for low-end devices. Maximum: Maximum Musk Rose Experience
 
 screen.LIGHTING=Lighting
 screen.MATERIALS=Materials
@@ -27,9 +27,13 @@ option.ENABLE_CLOUDS=Clouds
 option.ENABLE_CLOUD_SHADING=Cloud Shades
 option.ENABLE_DOF=Depth of Field
 option.ENABLE_DOF.comment=Blurs unfocused objects
+option.ENABLE_BLOOM=Bloom
 option.shadowMapResolution=Shadow Map Resolution
 option.SHADOW_BIAS=Shadow Bias
 option.SHADOW_BIAS.comment=Adjust this value if you see a bug on shadows
 option.sunPathRotation=Sun/Moon Angle
 option.centerDepthHalflife=DOF Update Time
 option.GAMMA=Gamma
+option.vanillaAOIntensity=Vanilla AO Intensity
+option.shaderAOIntensity=Shader AO Intensity
+option.occlShadowBrightness=Occlusion Shadow Brightness
