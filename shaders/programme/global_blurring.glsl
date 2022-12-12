@@ -3,7 +3,7 @@
 
 #if defined BLURRING_FRAGMENT
 uniform sampler2D gcolor;
-uniform sampler2D depthtex1;
+uniform sampler2D depthtex2;
 uniform sampler2D colortex9;
 uniform float centerDepthSmooth;
 uniform float viewWidth, viewHeight;
@@ -19,9 +19,12 @@ const float centerDepthHalflife = 2.0; // [0.0 1.0 2.0 3.0 4.0 5.0]
 // #define ENABLE_DOF
 #define ENABLE_BLOOM
 
+#define DOF_INTENSITY 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#define BLOOM_INTENSITY 0.4 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+
 void main() {
 vec3 albedo = texture2D(gcolor, uv).rgb;
-float depth = texture2D(depthtex1, uv).r;
+float depth = texture2D(depthtex2, uv).r;
 
 /*
  ** Apply Depth of Field effect.
@@ -52,13 +55,13 @@ preBloomOffset += texture2D(colortex9, uv + vec2(steps, steps) * pixelSize * get
 			offset *= getRotationMatrix(float(steps * 2 * steps * 2));
 
 			bloom += texture2D(colortex9, uv + offset * float(steps)).rgb;
-			blurred += texture2D(gcolor, uv + offset * unfocused).rgb;
+			blurred += texture2D(gcolor, uv + offset * unfocused * DOF_INTENSITY).rgb;
 		}
 	} bloom /= float(steps * 2 * steps * 2);
 	blurred /= float(steps * 2 * steps * 2);
 
 	albedo = blurred;
-	albedo += bloom * float(steps) * 0.1 * 0.4;
+	albedo += bloom * float(steps) * 0.1 * BLOOM_INTENSITY;
 	}
 #elif defined ENABLE_DOF
 	/* I do not know why, but without this, the option will be unshown */
@@ -69,7 +72,7 @@ preBloomOffset += texture2D(colortex9, uv + vec2(steps, steps) * pixelSize * get
 					vec2 offset = vec2(i, j) * pixelSize;
 					offset *= getRotationMatrix(float(steps * 2 * steps * 2));
 
-					blurred += texture2D(gcolor, uv + offset * unfocused).rgb;
+					blurred += texture2D(gcolor, uv + offset * unfocused * DOF_INTENSITY).rgb;
 				}
 			} blurred /= float(steps * 2 * steps * 2);
 
@@ -89,7 +92,7 @@ preBloomOffset += texture2D(colortex9, uv + vec2(steps, steps) * pixelSize * get
 				}
 			} bloom /= float(steps * 2 * steps * 2);
 
-			albedo += bloom * float(steps) * 0.1 * 0.4;
+			albedo += bloom * float(steps) * 0.1 * BLOOM_INTENSITY;
 		}
 	#endif
 #endif

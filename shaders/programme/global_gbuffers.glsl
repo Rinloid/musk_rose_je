@@ -117,6 +117,10 @@ puddle *= (1.0 - cosTheta);
     albedo.rgb = mix(albedo.rgb, entityColor.rgb, entityColor.a);
 #endif
 
+#if defined GBUFFERS_EYES
+    bloom = albedo.rgb;
+#endif
+
 #if defined GBUFFERS_SKY
     if (col.a > 0.5) {
         albedo.rgb = col.rgb;

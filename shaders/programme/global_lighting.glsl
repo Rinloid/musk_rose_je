@@ -23,6 +23,7 @@ uniform float frameTimeCounter;
 uniform float far, near;
 uniform float aspectRatio;
 uniform int moonPhase;
+uniform int isEyeInWater;
 uniform ivec2 eyeBrightnessSmooth;
 
 varying vec2 uv;
@@ -152,11 +153,13 @@ vec3 contrastFilter(const vec3 col, const float contrast) {
 const float sunPathRotation = -40.0; // [-50  -45 -40  -35 -30 -25 -20 -15 -10 -5 0 5 10 15 20 25 30 35 40 45 50]
 const int shadowMapResolution = 2048; // [512 1024 2048 4096]
 const float shadowDistance = 512.0;
-const float vanillaAOIntensity = 1.2; // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
-const float shaderAOIntensity = 0.2; // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
-const float occlShadowBrightness = 0.2; // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define VANNILA_AO_INTENSITY 1.2 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#define SHADER_AO_INTENSITY 0.2 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#define OCCL_SHADOW_BRIGHTNESS 0.2 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 #define ENABLE_SUNRAYS
+#define ENABLE_UNDERWATER_RAYS
+// #define ENABLE_COLED_RAYS
 #define ENABLE_FOG
 
 void main() {
@@ -203,15 +206,15 @@ vec3 sunlightCol = mix(SUNLIGHT_COL, SUNLIGHT_COL_SET, duskDawn);
 vec3 daylightCol = mix(sky, sunlightCol, 0.4);
 vec3 ambientLightCol = vec3(1.0);
 vec4 shadows = vec4(vec3(diffuse), 1.0);
-float vanillaAO = texture2D(gaux3, uv).b * vanillaAOIntensity;
-float shaderAO = getSSAO(viewPos, gbufferProjectionInverse, uv, aspectRatio, depthtex0) * shaderAOIntensity;
+float vanillaAO = texture2D(gaux3, uv).b * VANNILA_AO_INTENSITY;
+float shaderAO = getSSAO(viewPos, gbufferProjectionInverse, uv, aspectRatio, depthtex0) * SHADER_AO_INTENSITY;
 float totalAO =
 #ifdef ENABLE_AO
     clamp(vanillaAO + shaderAO, 0.0, 1.0);
 #else
     0.0;
 #endif
-float occlShadow = mix(1.0, occlShadowBrightness, totalAO);
+float occlShadow = mix(1.0, OCCL_SHADOW_BRIGHTNESS, totalAO);
 float fresnel = texture2D(colortex8, uv).r * 100.0;
 float shininess = texture2D(colortex8, uv).r * 500.0;
 
@@ -287,7 +290,9 @@ vec3 light = vec3(0.0);
     /*
     ** Apply coloured shadows.
     */
-    light += ((normalize(light) + 1.0) * 0.5 - (1.0 - shadows.rgb)) * (1.0 - shadows.a * diffuse) * light * (waterFlag > 0.5 ? blendAlpha : 1.0);
+    vec3 lightCol = (normalize(light) + 1.0) * 0.5;
+    vec3 lightColBright = lightCol + 1.0 - max(lightCol.r, max(lightCol.g, lightCol.b));
+    light += (lightColBright - (1.0 - shadows.rgb)) * (1.0 - shadows.a * diffuse) * light * (waterFlag > 0.5 ? blendAlpha : 1.0);
 
 #   if !defined WORLDM1
         vec3 totalSpecular = light * specularLight * dirLightFactor * daylight * clearWeather;
@@ -301,26 +306,6 @@ vec3 light = vec3(0.0);
     albedo = uncharted2ToneMap(albedo, EXPOSURE_BIAS);
     albedo = pow(albedo, vec3(1.0 / GAMMA));
     albedo = contrastFilter(albedo, GAMMA - 0.6);
-
-    float rayFactor = 0.0;
-    vec3 relPosRay = relPos;
-    relPosRay.xyz *= mix(1.0, 1.3, hash12(floor(gl_FragCoord.xy * 2048.0) + frameTimeCounter));
-    while (dot(relPosRay.xyz, relPosRay.xyz) > 0.25 * 0.25) {
-        relPosRay.xyz *= 0.75;
-        vec4 rayPos = getShadowPos(gbufferModelViewInverse, gbufferProjectionInverse, shadowModelView, shadowProjection, relPosRay, uv, depth, 1.0);
-        if (texture2D(shadowtex0, rayPos.xy).r > rayPos.z) {
-            rayFactor = mix(rayPos.w, rayFactor, exp2(length(relPosRay.xyz) * -0.0625));
-        }
-    }
-    #ifdef ENABLE_SUNRAYS
-        float sunRayFactor = min(rayFactor * max(0.0, 1.0 - distance(skyPos, sunPos)) * smoothstep(0.0, 0.1, daylight), 1.0);
-    #else
-        float sunRayFactor = 0.0;
-    #endif
-
-#   if !defined WORLDM1
-        albedo = mix(albedo, RAY_COL, sunRayFactor);
-#   endif
 
     float fogDistanceMult =
 #       if defined WORLD1
@@ -347,6 +332,56 @@ vec3 light = vec3(0.0);
         fogColor;
 #   endif
     albedo = mix(albedo, mix(fogCol, vec3(dot(fogCol, vec3(0.22, 0.707, 0.071))), 1.0 - clearWeather), fogFactor);
+}
+
+#if defined FORWARD_DEFERRED
+    if (
+    #ifdef ENABLE_COLED_RAYS
+        true
+    #else
+        depth != 1.0
+    #endif
+    )
+#elif defined FORWARD_COMPOSITE
+    if (blendFlag > 0.5)
+#endif
+{
+    float rayFactor = 0.0;
+    vec3 rayShadowCol = vec3(0.0);
+    vec3 totalrayCol = RAY_COL;
+    vec3 relPosRay = relPos;
+    relPosRay.xyz *= mix(1.0, 1.3, hash12(floor(gl_FragCoord.xy * 2048.0) + frameTimeCounter));
+    while (dot(relPosRay.xyz, relPosRay.xyz) > 0.25 * 0.25) {
+        relPosRay.xyz *= 0.75;
+        vec4 rayPos = getShadowPos(gbufferModelViewInverse, gbufferProjectionInverse, shadowModelView, shadowProjection, relPosRay, uv, depth, 1.0);
+        if (texture2D(shadowtex1, rayPos.xy).r > rayPos.z) {
+            if (depth != 1.0) {
+                rayFactor = mix(rayPos.w, rayFactor, exp2(length(relPosRay.xyz) * -0.0625));
+            }
+            #ifdef ENABLE_COLED_RAYS
+                if (texture2D(shadowtex0, rayPos.xy).r < rayPos.z) {
+                    if (depth == 1.0) {
+                        rayFactor = mix(rayPos.w, rayFactor, exp2(length(relPosRay.xyz) * -0.0625));
+                    }
+                    rayShadowCol = texture2D(shadowcolor0, rayPos.xy).rgb;
+                    rayShadowCol = rayShadowCol + 1.0 - max(rayShadowCol.r, max(rayShadowCol.g, rayShadowCol.b));
+                    vec3 rayColBright = totalrayCol + 1.0 - max(totalrayCol.r, max(totalrayCol.g, totalrayCol.b));
+                    float rayBrightness = dot(totalrayCol, vec3(0.4));
+                    totalrayCol = clamp(mix(rayColBright, rayShadowCol, blendAlpha * rayBrightness) * rayBrightness, 0.0, 1.0);
+                }
+            #endif
+        }
+    }
+    float sunRayFactor = 
+    #ifdef ENABLE_SUNRAYS
+        isEyeInWater == 0 ? min(rayFactor * max(0.0, 1.0 - distance(skyPos, sunPos)) * smoothstep(0.0, 0.1, daylight), 1.0) : 0.0;
+    #else
+        0.0;
+    #endif
+
+#   if !defined WORLDM1
+        albedo = mix(albedo, totalrayCol, sunRayFactor);
+#   endif
 }
 
 #if defined FORWARD_DEFERRED

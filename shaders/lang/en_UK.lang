@@ -10,7 +10,7 @@ screen.MISC=Misc.
 
 option.ENABLE_SUNRAYS=Sun Rays
 option.ENABLE_SUNRAYS.comment=Aka God’s Ray - Based on shadow map
-option.ENABLE_COLED_RAYS=Multi-Colored Rays
+option.ENABLE_COLED_RAYS=Multi-Coloured Rays
 option.ENABLE_FOG=Fog
 option.ENABLE_FOG.comment=Fog based on atmosphere
 option.ENABLE_AO=Ambient Occlusion
