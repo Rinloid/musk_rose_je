@@ -9,7 +9,7 @@ screen.SCREEN_EFFECTS=Effets d'Ecran
 screen.MISC=Autres
 
 option.ENABLE_SUNRAYS=Rayons de Soleil
-option.ENABLE_SUNRAYS.comment=Aka God’s Ray - Basé sur la carte d'ombres
+option.ENABLE_SUNRAYS.comment=Aka God’s Ray - Basé sur la carte d'ombres // TODO
 option.ENABLE_COLED_RAYS=Rayons Multicolores
 option.ENABLE_FOG=Brouillard
 option.ENABLE_FOG.comment=Brouillard basé sur l'atmosphère
@@ -26,7 +26,7 @@ option.ENABLE_WATER_REFRACTION=Refraction de l'Eau // PAS TRÈS FRANÇAIS
 option.ENABLE_RAIN_PUDDLES=Flaques d'Eau
 option.ENABLE_RAIN_PUDDLES.comment=Cet effet crée des lags !
 option.ENABLE_RAIN_RIPPLES=Ondulation de l'Eau
-option.ENABLE_FOLIAGE_WAVES=Vagues de Feuillages // PAS TRÈS FRANÇAIS
+option.ENABLE_FOLIAGE_WAVES=Mouvements de Feuillages
 option.ENABLE_CLOUDS=Nuages
 option.ENABLE_CLOUD_SHADING=Cloud Shades // TODO
 option.ENABLE_DOF=Profondeur de Champ
