@@ -1,6 +1,6 @@
 profile.MINIMUM=Minimum
 profile.MAXIMUM=Maximum
-//profile.comment=Minimum: Cheapest Musk Rose for low-end devices. Maximum: Maximum Musk Rose Experience
+profile.comment=Minimum: Cheapest Musk Rose for low-end devices. Maximum: Maximum Musk Rose Experience // TODO
 
 screen.LIGHTING=Eclairages
 screen.MATERIALS=Matériaux
