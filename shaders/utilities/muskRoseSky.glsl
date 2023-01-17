@@ -38,6 +38,8 @@ vec3 getAtmosphere(const vec3 pos, const vec3 sunPos, const vec3 skyCol, const f
 }
 #include "muskRoseClouds.glsl"
 vec3 getAtmosphereClouds(const vec3 pos, const vec3 sunPos, const vec3 skyCol, const float rain, const float brightness, const float daylight, const float time) {
+	const float cloudDensity = 1.50; // [0.00 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.10 1.20 1.30 1.40 1.50 1.60 1.70 1.80 1.90 2.00 2.10 2.20 2.30 2.40 2.50 2.60 2.70 2.80 2.90 3.00 3.10 3.20 3.30 3.40 3.50 3.60 3.70 3.80 3.90 4.00 4.10 4.20 4.30 4.40 4.50 4.60 4.70 4.80 4.90 5.00 5.10 5.20 5.30 5.40 5.50 5.60 5.70 5.80 5.90 6.00 6.10 6.20 6.30 6.40 6.50 6.60 6.70 6.80 6.90 7.00 7.10 7.20 7.30 7.40 7.50 7.60 7.70 7.80 7.90 8.00 8.10 8.20 8.30 8.40 8.50 8.60 8.70 8.80 8.90 9.00 9.10 9.20 9.30 9.40 9.50 9.60 9.70 9.80 9.90 10.00]
+	
 	float zenith = 0.5 / sqrt(max(pos.y, 0.05));
 	
 	vec3 absorption = getAbsorption(skyCol, zenith, brightness);
@@ -53,7 +55,7 @@ vec3 getAtmosphereClouds(const vec3 pos, const vec3 sunPos, const vec3 skyCol, c
 	vec3 cloudCol = mix(result, vec3(1.0), cloudBrightness);
 	cloudCol = mix(cloudCol, vec3(dot(cloudCol, vec3(0.4))), 0.4);
 	
-	result = mix(result, mix(cloudCol, cloudCol * 0.8, clouds.y), 1.0 / absorption * clouds.x * 1.0);
+	result = mix(result, mix(cloudCol, cloudCol * 0.5, clouds.y), 1.0 / absorption * clouds.x * mix(0.5, cloudDensity, smoothstep(0.0, 0.2, daylight)));
 	
     result += mie;
 	result *= sunAbsorption * 0.5 + 0.5 * length(sunAbsorption);
@@ -108,7 +110,7 @@ vec4 getMoon(const vec3 moonPosition, const float moonPhase, const float moonSca
 
 vec3 toneMapReinhard(const vec3 color) {
 	vec3 col = color * color;
-    float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));
+    float luma = dot(col, vec3(0.4));
     vec3 exposure = col / (col + 1.0);
 	vec3 result = mix(col / (luma + 1.0), exposure, exposure);
 

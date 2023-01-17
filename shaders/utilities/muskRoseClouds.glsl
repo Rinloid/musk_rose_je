@@ -26,15 +26,20 @@ float fBM(vec2 x, const float amp, const float lower, const float upper, const f
 }
 
 float cloudMap(const vec2 pos, const float time, const float amp, const float rain, const int oct) {
-    return fBM(pos, 0.55 - abs(amp) * 0.1, mix(0.8, 0.0, rain), 0.9, time, oct);
+    return fBM(pos, 0.55 - abs(amp) * 0.1, mix(0.8, 0.0, rain), 0.81, time, oct);
+}
+
+float cloudMapSmall(const vec2 pos, const float time, const float amp, const float rain, const int oct) {
+    return fBM(pos, 0.55 - abs(amp) * 0.1, mix(0.65, 0.0, rain), 1.0, time, oct);
 }
 
 float cloudMapShade(const vec2 pos, const float time, const float amp, const float rain, const int oct) {
-    return fBM(pos * 0.995, 0.54 - amp * 0.1, mix(0.8, 0.0, rain), 0.875, time, oct);
+    return fBM(pos, 0.54 - abs(amp) * 0.1, mix(0.75, 0.0, rain), 1.0, time, oct);
 }
 
 #define ENABLE_CLOUDS
 #define ENABLE_CLOUD_SHADING
+#define ENABLE_CIRRUS
 
 /*
  ** Generate volumetric clouds with piled 2D noise.
@@ -59,7 +64,7 @@ vec2 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const fl
     
     float clouds = 0.0;
     float shade = 0.0;
-    float amp = -0.5;
+    float amp = -0.12;
 
     #ifdef ENABLE_CLOUDS
         float drawSpace = max(0.0, length(pos.xz / (pos.y * float(10))));
@@ -69,7 +74,13 @@ vec2 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const fl
                 vec2 cloudPos = pos.xz / (pos.y + camPos.y / cloudHeight) * height * cloudHeight + camPos.xz;
                 cloudPos *= 0.01 + textureNoise(floor(cloudPos * 256.0)) * 0.00024;
 
-                clouds = mix(clouds, 1.0, cloudMap(cloudPos, time, amp, rain, cloudOctaves));
+                #ifdef ENABLE_CIRRUS
+                    if (i == 0) {
+                        clouds += mix(0.0, 2.0, cloudMapSmall(cloudPos * vec2(2.0, 7.0) * 0.5, time, 0.5, rain, cloudOctaves));
+                    }
+                #endif
+
+                clouds += mix(0.0, 1.0, cloudMap(cloudPos, time, amp, rain, cloudOctaves));
 
                 #ifdef ENABLE_CLOUD_SHADING
                     /* 
@@ -90,7 +101,7 @@ vec2 renderClouds(const vec3 pos, const vec3 camPos, const vec3 sunPos, const fl
 
             } shade /= float(cloudSteps);
         }
-
+        clouds /= float(cloudSteps);
         clouds = mix(clouds, 0.0, drawSpace);
 #   endif
 
