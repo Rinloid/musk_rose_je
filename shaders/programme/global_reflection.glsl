@@ -115,7 +115,8 @@ if (blendFlag > 0.5) {
         albedo = mix(blendCol, albedo, max(blendAlpha, cosTheta));
     }
 }
-    /* DRAWBUFFERS:0
+    /* DRAWBUFFERS:0 */
+    /*
      * 0 = gcolor
      * 1 = gdepth
      * 2 = gnormal

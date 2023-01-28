@@ -410,7 +410,8 @@ vec3 light = vec3(0.0);
     backward = albedo;
 #endif
 
-    /* DRAWBUFFERS:059
+    /* DRAWBUFFERS:059 */
+    /*
      * 0 = gcolor
      * 1 = gdepth
      * 2 = gnormal

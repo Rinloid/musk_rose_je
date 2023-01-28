@@ -188,15 +188,16 @@ if (waterFlag > 0.5) {
 #endif
 
 #   if !defined GBUFFERS_SHADOW
-        /* DRAWBUFFERS:0246789
-        * 0 = gcolor
-        * 1 = gdepth
-        * 2 = gnormal
-        * 3 = composite
-        * 4 = gaux1
-        * 5 = gaux2
-        * 6 = gaux3
-        * 7 = gaux4
+        /* DRAWBUFFERS:0246789 */
+        /*
+         * 0 = gcolor
+         * 1 = gdepth
+         * 2 = gnormal
+         * 3 = composite
+         * 4 = gaux1
+         * 5 = gaux2
+         * 6 = gaux3
+         * 7 = gaux4
         */
         gl_FragData[0] = albedo; // gcolor
         gl_FragData[1] = vec4((worldNormal + 1.0) * 0.5, 1.0); // gnormal
@@ -207,9 +208,10 @@ if (waterFlag > 0.5) {
         gl_FragData[6] = vec4(bloom, 1.0); // colortex9
 
 #   else
-        /* DRAWBUFFERS:0
-        * 0 = everything
-        * 1 = translucent
+        /* DRAWBUFFERS:0 */
+        /*
+		 * 0 = everything
+         * 1 = translucent
         */
         gl_FragData[0] = albedo; // everything
 #   endif

@@ -97,7 +97,8 @@ preBloomOffset += texture2D(colortex9, uv + vec2(steps, steps) * pixelSize * get
 	#endif
 #endif
 
-    /* DRAWBUFFERS:0
+    /* DRAWBUFFERS:0 */
+	/*
      * 0 = gcolor
      * 1 = gdepth
      * 2 = gnormal

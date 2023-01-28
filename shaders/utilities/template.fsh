@@ -7,7 +7,8 @@ varying vec2 uv;
 void main() {
 vec3 albedo = texture2D(gcolor, uv).rgb;
 
-    /* DRAWBUFFERS:0
+    /* DRAWBUFFERS:0 */
+    /*
      * 0 = gcolor
      * 1 = gdepth
      * 2 = gnormal
