@@ -1,0 +1,24 @@
+screen.COLS=Adjust Colours
+
+option.COL_POINTLIGHT_R=Pointlight Colour §cRed§f
+option.COL_POINTLIGHT_G=Pointlight Colour §aGreen§f
+option.COL_POINTLIGHT_B=Pointlight Colour §9Blue§f
+
+option.COL_MOONLIGHT_R=§1Moonlight Colour§f §cRed§f
+option.COL_MOONLIGHT_G=§1Moonlight Colour§f §aGreen§f
+option.COL_MOONLIGHT_B=§1Moonlight Colour§f §9Blue§f
+
+option.COL_SUNLIGHT_DAY_R=§eSunlight Colour§f §cRed§f
+option.COL_SUNLIGHT_DAY_G=§eSunlight Colour§f §aGreen§f
+option.COL_SUNLIGHT_DAY_B=§eSunlight Colour§f §9Blue§f
+
+option.COL_SUNLIGHT_SET_R=§6Dusk/Dawn Sunlight Colour§f §cRed§f
+option.COL_SUNLIGHT_SET_G=§6Dusk/Dawn Sunlight Colour§f §aGreen§f
+option.COL_SUNLIGHT_SET_B=§6Dusk/Dawn Sunlight Colour§f §9Blue§f
+
+option.COL_WATER_R=Water Colour §cRed§f
+option.COL_WATER_G=Water Colour §aGreen§f
+option.COL_WATER_B=Water Colour §9Blue§f
+
+option.ENABLE_COLED_RAYS=Enable Coloured Sun Rays
+option.ENABLE_COLED_RAYS.comment=If the sun rays blocked by translucent objects such as staind glasses, they will be coloured.

@@ -1,0 +1,107 @@
+screen.COLS=色の調整
+screen.LIGHTS=光の調整
+screen.SKY=空
+screen.WATER=水
+screen.FOG=霧
+screen.POSTPROCESS=後処理
+screen.MISC=その他
+
+value.FOG_QUALITY.FOG_LINEAR=低
+value.FOG_QUALITY.FOG_EXP=高
+
+value.PBR_TEXTURE.AUTO_GENERATION=自動生成
+value.PBR_TEXTURE.LAB_PBR=LabPBR を適用
+
+option.shadowMapResolution=影の解像度
+option.shadowDistance=影の描画距離
+option.sunPathRotation=太陽・月の角度
+
+option.ENABLE_SHADER_CLOUDS=シェーダー生成の雲
+option.ENABLE_VANILLA_CLOUDS=バニラの雲
+
+option.ENABLE_SUN=太陽
+option.ENABLE_MOON=月
+option.ENABLE_STARS=星
+
+option.SHADOW_BIAS=影バイアス
+option.SHADOW_BIAS.comment=影にノイズが発生する場合、これを調整してみてください。
+
+option.COL_POINTLIGHT_R=光源の色 §c赤§f
+option.COL_POINTLIGHT_G=光源の色 §a緑§f
+option.COL_POINTLIGHT_B=光源の色 §9青§f
+
+option.COL_MOONLIGHT_R=§1月明かりの色§f §c赤§f
+option.COL_MOONLIGHT_G=§1月明かりの色§f §a緑§f
+option.COL_MOONLIGHT_B=§1月明かりの色§f §9青§f
+
+option.COL_SUNLIGHT_DAY_R=§e太陽光の色§f §c赤§f
+option.COL_SUNLIGHT_DAY_G=§e太陽光の色§f §a緑§f
+option.COL_SUNLIGHT_DAY_B=§e太陽光の色§f §9青§f
+
+option.COL_SUNLIGHT_SET_R=§6日の出・日没の太陽光の色§f §c赤§f
+option.COL_SUNLIGHT_SET_G=§6日の出・日没の太陽光の色§f §a緑§f
+option.COL_SUNLIGHT_SET_B=§6日の出・日没の太陽光の色§f §9青§f
+
+option.COL_SKYLIGHT_R=§b空の光の色§f §c赤§f
+option.COL_SKYLIGHT_G=§b空の光の色§f §a緑§f
+option.COL_SKYLIGHT_B=§b空の光の色§f §9青§f
+
+option.UNLIT_AREA_BRIGHTNESS=光源が無い場所の明るさ
+
+option.AMBIENTLIGHT_INTENSITY=環境光の強さ
+option.POINTLIGHT_INTENSITY=光源の強さ
+option.SUNLIGHT_INTENSITY=太陽光の強さ
+option.SKYLIGHT_INTENSITY=空の光の強さ
+option.MOONLIGHT_INTENSITY=月明かりの強さ
+
+option.AO_VANILLA_INTENSITY=バニラの AO の強さ
+option.AO_SHADER_INTENSITY=シェーダー生成の AO の強さ
+
+option.TRANSLUCENT_BLUR_INTENSITY=半透明ブラーの強さ
+option.TRANSLUCENT_BLUR_INTENSITY.comment=色付きガラスなどの半透明ブロックの後ろの景色をぼかします。
+
+option.ENABLE_WATER_WAVES=水の波
+option.ENABLE_WATER_CAUSTICS=水のコースティクス
+option.ENABLE_WATER_CAUSTICS.comment=水中を屈折して、水中の地面を照らす光です。
+
+option.COL_WATER_R=水の色 §c赤§f
+option.COL_WATER_G=水の色 §a緑§f
+option.COL_WATER_B=水の色 §9青§f
+
+option.WATER_TRANSPARENCY=水の透明度
+option.WATER_REFLECTANCE=水の反射度
+
+option.ENABLE_RAIN_RIPPLES=雨の波紋
+
+option.ENABLE_SSR=画面内反射 (SSR)
+option.SSR_RAYTRACING=SSR のレイトレーシング
+
+option.REFLECTRION_BLUR_INTENSITY=リフレクションブラーの強さ
+option.REFLECTRION_BLUR_INTENSITY.comment=無条件で反射をぼかします。ラフネスブラーと重ね掛けされます。
+option.ROUGHNESS_BLUR_INTENSITY=ラフネスブラーの強さ
+option.ROUGHNESS_BLUR_INTENSITY.comment=PBR テクスチャによって指定されたブロックの粗さに応じて、反射をぼかします。
+
+option.PBR_TEXTURE=PBR テクスチャ
+option.PBR_TEXTURE.comment=「自動生成」は、リソースパック無しのためのオプションです。LabPBR をサポートするリソースパックを導入している場合は選択しない方が良いでしょう。
+
+option.ENABLE_BLOCKY_CLOUDS=バニラ風の四角い雲
+
+option.ENABLE_COLED_RAYS=色付きの太陽光線
+option.ENABLE_COLED_RAYS.comment=色付きガラスなどの半透明ブロックに太陽光線が遮られると、ブロックに応じた色が光線に付くようになります。
+
+option.FOG_QUALITY=霧の品質
+option.FOG_QUALITY.comment=これらのオプションの視覚的な違いはあまりありませんが、少しのパフォーマンス向上が期待できるかもしれません。
+option.FOG_HEIGHT=霧の高さ
+option.FOG_DISTANCE=霧の距離
+option.FOG_DISTANCE_UNDERWATER=水中の霧の距離
+option.FOG_DENSITY=霧の濃度
+option.FOG_DENSITY_UNDERWATER=水中の霧の濃度
+
+option.ENABLE_WAVING_FOLIAGE=揺れる草木
+option.WIND_POWER=雨天時の風の強さ
+option.WIND_POWER_RAINY=雨天時の風の強さ
+
+option.ENABLE_BLOOM=ブルーム
+option.ENABLE_BLOOM.comment=光源などの眩しいものをぼかして、より良く見せるエフェクトです。
+option.ENABLE_DOF=被写界深度 (Depth of Field)
+option.ENABLE_DOF.comment=焦点の合っていない部分をぼかすエフェクトです。

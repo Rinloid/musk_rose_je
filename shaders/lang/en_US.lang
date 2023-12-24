@@ -1,0 +1,103 @@
+screen.COLS=Adjust Colors
+screen.LIGHTS=Adjust Lighting
+screen.SKY=Sky
+screen.WATER=Water
+screen.FOG=Fog
+screen.POSTPROCESS=Postprocess
+screen.MISC=Misc.
+
+value.FOG_QUALITY.FOG_LINEAR=Low
+value.FOG_QUALITY.FOG_EXP=High
+
+value.PBR_TEXTURE.AUTO_GENERATION=Generate Automatically
+value.PBR_TEXTURE.LAB_PBR=Read LabPBR
+
+option.shadowMapResolution=Shadowmap Resolution
+option.shadowDistance=Shadow Render Distance
+option.sunPathRotation=Sun/Moon Angle
+
+option.ENABLE_SHADER_CLOUDS=Shader-Generated Clouds
+option.ENABLE_VANILLA_CLOUDS=Enable Vanilla Clouds
+
+option.ENABLE_SUN=Enable Sun
+option.ENABLE_MOON=Enable Moon
+option.ENABLE_STARS=Enable Stars
+
+option.SHADOW_BIAS=Shadow Bias
+option.SHADOW_BIAS.comment=Try adjusting this if you see the shadows being noisy.
+
+option.COL_POINTLIGHT_R=Pointlight Color §cRed§f
+option.COL_POINTLIGHT_G=Pointlight Color §aGreen§f
+option.COL_POINTLIGHT_B=Pointlight Color §9Blue§f
+
+option.COL_MOONLIGHT_R=§1Moonlight Color§f §cRed§f
+option.COL_MOONLIGHT_G=§1Moonlight Color§f §aGreen§f
+option.COL_MOONLIGHT_B=§1Moonlight Color§f §9Blue§f
+
+option.COL_SUNLIGHT_DAY_R=§eSunlight Color§f §cRed§f
+option.COL_SUNLIGHT_DAY_G=§eSunlight Color§f §aGreen§f
+option.COL_SUNLIGHT_DAY_B=§eSunlight Color§f §9Blue§f
+
+option.COL_SUNLIGHT_SET_R=§6Dusk/Dawn Sunlight Color§f §cRed§f
+option.COL_SUNLIGHT_SET_G=§6Dusk/Dawn Sunlight Color§f §aGreen§f
+option.COL_SUNLIGHT_SET_B=§6Dusk/Dawn Sunlight Color§f §9Blue§f
+
+option.COL_SKYLIGHT_R=§bSkylight Color§f §cRed§f
+option.COL_SKYLIGHT_G=§bSkylight Color§f §aGreen§f
+option.COL_SKYLIGHT_B=§bSkylight Color§f §9Blue§f
+
+option.UNLIT_AREA_BRIGHTNESS=Unlit Area Brightness
+
+option.AMBIENTLIGHT_INTENSITY=Ambientlight Intensity
+option.POINTLIGHT_INTENSITY=Pointlight Intensity
+option.SUNLIGHT_INTENSITY=Sunlight Intensity
+option.SKYLIGHT_INTENSITY=Skylight Intensity
+option.MOONLIGHT_INTENSITY=Moonlight Intensity
+
+option.AO_VANILLA_INTENSITY=Vanilla AO Intensity
+option.AO_SHADER_INTENSITY=Shader-Generated AO Intensity
+
+option.TRANSLUCENT_BLUR_INTENSITY=Translucent Blur Intensity
+
+option.ENABLE_WATER_WAVES=Enable Water Waves
+option.ENABLE_WATER_CAUSTICS=Enable Water Caustics
+
+option.COL_WATER_R=Water Color §cRed§f
+option.COL_WATER_G=Water Color §aGreen§f
+option.COL_WATER_B=Water Color §9Blue§f
+
+option.WATER_TRANSPARENCY=Water Opacity
+option.WATER_REFLECTANCE=Water Reflectance
+
+option.ENABLE_RAIN_RIPPLES=Enable Rain Ripples
+
+option.ENABLE_SSR=Enable Screen-Space Reflections
+option.SSR_RAYTRACING=Enable Raytracing for SSR
+
+option.REFLECTRION_BLUR_INTENSITY=Reflectiuon Blur Intensity
+option.ROUGHNESS_BLUR_INTENSITY=Roughness Blur Intensity
+
+option.PBR_TEXTURE=PBR Texture
+option.PBR_TEXTURE.comment= "Generate Automatically" is just for those who are not applying PBR textures.
+
+option.ENABLE_BLOCKY_CLOUDS=Enable Blocky Clouds
+
+option.ENABLE_COLED_RAYS=Enable Colored Sun Rays
+option.ENABLE_COLED_RAYS.comment=If the sun rays blocked by translucent objects such as staind glasses, they will be colored.
+
+option.FOG_QUALITY=Fog Quality
+option.FOG_QUALITY.comment=Not much visual difference between these options, but a small performance improvement could be expected.
+option.FOG_HEIGHT=Fog Height
+option.FOG_DISTANCE=Fog Distance
+option.FOG_DISTANCE_UNDERWATER=Underwater Fog Distance
+option.FOG_DENSITY=Fog Density
+option.FOG_DENSITY_UNDERWATER=Underwater Fog Density
+
+option.ENABLE_WAVING_FOLIAGE=Enable Wavy Foliage
+option.WIND_POWER=Wind Power
+option.WIND_POWER_RAINY=Rainy Wind Power
+
+option.ENABLE_BLOOM=Enable Bloom
+option.ENABLE_BLOOM.comment=Leaks lights to make them look better.
+option.ENABLE_DOF=Enable Depth of Field
+option.ENABLE_DOF.comment=Blurs unfocused objects.
