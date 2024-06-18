@@ -18,6 +18,8 @@ option.sunPathRotation=Sun/Moon Angle
 
 option.ENABLE_SHADER_CLOUDS=Shader-Generated Clouds
 option.ENABLE_VANILLA_CLOUDS=Enable Vanilla Clouds
+option.ENABLE_CLOUD_SHADE=Enable Cloud Shade
+option.CHEAP_CLOUD_SHADE=Cheap Cloud Shade
 
 option.ENABLE_SUN=Enable Sun
 option.ENABLE_MOON=Enable Moon
@@ -61,6 +63,9 @@ option.TRANSLUCENT_BLUR_INTENSITY=Translucent Blur Intensity
 
 option.ENABLE_WATER_WAVES=Enable Water Waves
 option.ENABLE_WATER_CAUSTICS=Enable Water Caustics
+option.ENABLE_WATER_PARALLAX=Enable Water Parallax
+option.WATER_PARALLAX_STEPS=Water Parallax Steps
+option.WATER_WAVE_HEIGHT=Water Wave Height
 
 option.COL_WATER_R=Water Color §cRed§f
 option.COL_WATER_G=Water Color §aGreen§f

@@ -1,5 +1,5 @@
-#if !defined MUSK_ROSE_BLOOM_GLSL_INCLUDED
-#define MUSK_ROSE_BLOOM_GLSL_INCLUDED
+#if !defined MUSK_ROSE_BLUR_GLSL_INCLUDED
+#define MUSK_ROSE_BLUR_GLSL_INCLUDED
 
 #define BLUR_HORIZONTAL 1
 #define BLUR_VERTICAL 2
@@ -30,4 +30,4 @@ vec3 getBlur(const sampler2D bloomSampler, const vec2 uv, const float lod, const
 	return result;
 }
 
-#endif /* !defined MUSK_ROSE_BLOOM_GLSL_INCLUDED */
+#endif /* !defined MUSK_ROSE_BLUR_GLSL_INCLUDED */

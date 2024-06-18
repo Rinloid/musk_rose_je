@@ -18,6 +18,8 @@ option.sunPathRotation=太陽・月の角度
 
 option.ENABLE_SHADER_CLOUDS=シェーダー生成の雲
 option.ENABLE_VANILLA_CLOUDS=バニラの雲
+option.ENABLE_CLOUD_SHADE=雲のシェード
+option.CHEAP_CLOUD_SHADE=軽量な雲のシェード
 
 option.ENABLE_SUN=太陽
 option.ENABLE_MOON=月
@@ -63,6 +65,9 @@ option.TRANSLUCENT_BLUR_INTENSITY.comment=色付きガラスなどの半透明�
 option.ENABLE_WATER_WAVES=水の波
 option.ENABLE_WATER_CAUSTICS=水のコースティクス
 option.ENABLE_WATER_CAUSTICS.comment=水中を屈折して、水中の地面を照らす光です。
+option.ENABLE_WATER_PARALLAX=水の視差効果
+option.WATER_PARALLAX_STEPS=水の視差効果の解像度
+option.WATER_WAVE_HEIGHT=水の波の高さ
 
 option.COL_WATER_R=水の色 §c赤§f
 option.COL_WATER_G=水の色 §a緑§f

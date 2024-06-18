@@ -8,7 +8,7 @@ float getWaterMap(const vec2 pos) {
 float getWaterWaves(const vec2 pos) {
 	float waves = 0.0;
 	#ifdef ENABLE_WATER_WAVES
-		vec2 p = pos * 35.0;
+		vec2 p = pos * 16.0;
 		float t = frameTimeCounter * WIND_POWER * 25.0;
 
 		waves += getWaterMap(vec2(p.y + t * 0.20, p.x - t * 0.20)) * 5.00;
@@ -17,7 +17,7 @@ float getWaterWaves(const vec2 pos) {
 
 	#endif
 
-	return waves * WIND_POWER * 0.0035;
+	return waves * WIND_POWER * 0.008;
 }
 
 float getWaterCaustics(const vec2 pos) {
@@ -43,6 +43,20 @@ vec3 getWaterWaveNormal(const vec2 pos) {
     delta.y -= getWaterWaves(pos + vec2(0.0, texStep));
     
 	return normalize(vec3(delta / texStep, 1.0));
+}
+
+vec2 getWaterParallax(const vec3 tanViewPos, const vec2 pos) {
+	#ifdef ENABLE_WATER_PARALLAX
+		vec2 paraPos = pos;
+		float waterHeight = getWaterWaves(pos);
+		
+		for (int i = 0; i < WATER_PARALLAX_STEPS; i++) {
+			paraPos += waterHeight * tanViewPos.xy / tanViewPos.z * (WATER_WAVE_HEIGHT / WATER_PARALLAX_STEPS);
+			waterHeight = getWaterWaves(paraPos);
+		};
+	#endif
+
+    return paraPos;
 }
 
 #endif /* !defined MUSK_ROSE_WATER_GLSL_INCLUDED */

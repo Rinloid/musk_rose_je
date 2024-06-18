@@ -46,35 +46,59 @@ float getCloudMap(const vec2 pos) {
     }
 
     vec2 getClouds(const vec3 pos, const vec3 sunPos) {
-#      if defined CLOUDS_QUALITY_LOW
+#       if defined CLOUDS_QUALITY_LOW
             #ifdef ENABLE_BLOCKY_CLOUDS
                 const int cloudSteps = 16;
                 const float cloudStepSize = 0.012;
-                const int raySteps = 8;
-                const float rayStepSize = 0.04;
-                const float cloudShadeMult = 0.2;
+                #ifdef CHEAP_CLOUD_SHADE
+                    const int raySteps = 4;
+                    const float rayStepSize = 0.08;
+                    const float cloudShadeMult = 0.2;
+                #else
+                    const int raySteps = 8;
+                    const float rayStepSize = 0.04;
+                    const float cloudShadeMult = 0.2;
+                #endif
             #else
                 const int cloudSteps = 12;
                 const float cloudStepSize = 0.064;
-                const int raySteps = 4;
-                const float rayStepSize = 0.08;
-                const float cloudShadeMult = 4.0;
+                #ifdef CHEAP_CLOUD_SHADE
+                    const int raySteps = 2;
+                    const float rayStepSize = 0.16;
+                    const float cloudShadeMult = 8.0;
+                #else
+                    const int raySteps = 4;
+                    const float rayStepSize = 0.08;
+                    const float cloudShadeMult = 4.0;
+                #endif
             #endif
-#      else
+#       else
             #ifdef ENABLE_BLOCKY_CLOUDS
                 const int cloudSteps = 32;
                 const float cloudStepSize = 0.006;
-                const int raySteps = 16;
-                const float rayStepSize = 0.02;
-                const float cloudShadeMult = 0.1;
+                #ifdef CHEAP_CLOUD_SHADE
+                    const int raySteps = 8;
+                    const float rayStepSize = 0.04;
+                    const float cloudShadeMult = 0.2;
+                #else
+                    const int raySteps = 16;
+                    const float rayStepSize = 0.02;
+                    const float cloudShadeMult = 0.1;
+                #endif
             #else
                 const int cloudSteps = 24;
                 const float cloudStepSize = 0.032;
-                const int raySteps = 8;
-                const float rayStepSize = 0.04;
-                const float cloudShadeMult = 2.0;
-        #endif
-#      endif
+                #ifdef CHEAP_CLOUD_SHADE
+                    const int raySteps = 4;
+                    const float rayStepSize = 0.08;
+                    const float cloudShadeMult = 4.0;
+                #else
+                    const int raySteps = 8;
+                    const float rayStepSize = 0.04;
+                    const float cloudShadeMult = 2.0;
+                #endif
+            #endif
+#       endif
         const float cloudHeight = 256.0;
 
         vec2 totalClouds = vec2(0.0, 0.0);
@@ -95,19 +119,21 @@ float getCloudMap(const vec2 pos) {
                     clouds += getFluffyClouds(p.xz * 4.0, abs(amp), 0.7, 0.75, 5);
                 #endif
 
-                if (clouds > 0.0) {
-                    vec3 rayPos = (pos.xyz / pos.y * height) - sunPos * rayStepSize;
-                    float ray = 0.0;
-                    for (int j = 0; j < raySteps; j++) {
-                        #ifdef ENABLE_BLOCKY_CLOUDS
-                            ray += getBlockyClouds(rayPos.xz * 3.7) * cloudShadeMult;
-                        #else
-                            ray += getFluffyClouds(rayPos.xz * 4.0, abs(amp), 0.7, 1.0, 5) * cloudShadeMult;
-                        #endif
-                        rayPos += sunPos * rayStepSize;
-                    } ray;
-                    shade += ray;
-                }
+                #ifdef ENABLE_CLOUD_SHADE
+                    if (clouds > 0.0) {
+                        vec3 rayPos = (pos.xyz / pos.y * height) - sunPos * rayStepSize;
+                        float ray = 0.0;
+                        for (int j = 0; j < raySteps; j++) {
+                            #ifdef ENABLE_BLOCKY_CLOUDS
+                                ray += getBlockyClouds(rayPos.xz * 3.7) * cloudShadeMult;
+                            #else
+                                ray += getFluffyClouds(rayPos.xz * 4.0, abs(amp), 0.7, 1.0, 5) * cloudShadeMult;
+                            #endif
+                            rayPos += sunPos * rayStepSize;
+                        } ray;
+                        shade += ray;
+                    }
+                #endif
                 amp -= 0.12 / float(cloudSteps);
             } clouds /= float(cloudSteps);
             shade /= float(cloudSteps);
