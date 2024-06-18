@@ -120,7 +120,7 @@ vec3 fNormal =
 		fNormal = normalize(fNormal * tbnMatrix);
 #	endif
 	if (int(mcEntity) == 1) {
-		fNormal = normalize(getWaterWaveNormal(fragPos0.xz) * tbnMatrix);
+		fNormal = normalize(getWaterWaveNormal(getWaterParallax(tbnMatrix * viewPos0, fragPos0.xz)) * tbnMatrix);
 	}
 	fNormal = mat3(gbufferModelViewInverse) * fNormal;
 #else
@@ -157,13 +157,7 @@ if (int(mcEntity) == 1) {
 	reflectance = WATER_REFLECTANCE;
 	perceptualSmoothness = 0.8;
 }
-/*
-if (rainStrength > 0.0 && uv1.y > 0.85) {
-	fNormal = mix(fNormal, normalize(getRainRipplesNormal(fNormal, fragPos0.xz, rainStrength, frameTimeCounter) * getTBNMatrix(fNormal)), rainStrength * smoothstep(0.85, 1.0, uv1.y));
-	reflectance = mix(reflectance, WATER_REFLECTANCE, rainStrength * smoothstep(0.85, 1.0, uv1.y));
-	perceptualSmoothness = mix(perceptualSmoothness, 0.8, rainStrength * smoothstep(0.85, 1.0, uv1.y));
-}
-*/
+
 #if defined GBUFFERS_WEATHER
 	perceptualSmoothness = 0.0;
 	emissive = 0.0;
@@ -290,7 +284,7 @@ if (int(mc_Entity.x) == 10002) {
 
 #if defined GBUFFERS_LINE
 	const float LINE_WIDTH  = 2.0;
-	const float VIEW_SHRINK = 0.9609375 /* 1.0 - (1.0 / 256.0) */ ;
+	const float VIEW_SHRINK = 0.99609375 /* 1.0 - (1.0 / 256.0) */ ;
 	const mat4 VIEW_SCALE   = mat4(VIEW_SHRINK, 0.0, 0.0, 0.0,
 								   0.0, VIEW_SHRINK, 0.0, 0.0,
 								   0.0, 0.0, VIEW_SHRINK, 0.0,
