@@ -17,9 +17,8 @@ in vec3 shadowLightPos;
 
 #include "../programmes/utils/musk_rose_dither.glsl"
 #include "../programmes/musk_rose_position.glsl"
-
-#define ENABLE_BLUR BLUR_VERTICAL
 #include "../programmes/utils/musk_rose_blur.glsl"
+#include "../programmes/utils/musk_rose_bloom.glsl"
 
 /* DRAWBUFFERS:039 */
 layout(location = 0) out vec4 fragData0;
@@ -53,16 +52,7 @@ vec3 pos1 = normalize(relPos1);
 vec3 viewDir0 = -pos0;
 vec3 viewDir1 = -pos1;
 
-#ifdef ENABLE_BLOOM
-	vec3 bloom = vec3(0.0, 0.0, 0.0);
-
-	bloom = getBlur(colortex9, uv, 0.0, 12, 2.0);
-
-	albedo += bloom;
-	if (translucent.a > 0.0) {
-		translucent.rgb += bloom;
-	}
-#endif
+albedo += textureLod(colortex9, uv, 4.0).rgb;
 
 	/* colortex0 (gcolor) */
 	fragData0 = vec4(albedo, 1.0);

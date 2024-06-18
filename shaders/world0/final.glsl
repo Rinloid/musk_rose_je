@@ -21,6 +21,14 @@ in vec3 shadowLightPos;
 #define ENABLE_BLUR BLUR_VERTICAL
 #include "../programmes/utils/musk_rose_blur.glsl"
 
+mat3 getTBNMatrix(const vec3 normal) {
+    vec3 T = vec3(abs(normal.y) + normal.z, 0.0, normal.x);
+    vec3 B = vec3(0.0, -abs(normal).x - abs(normal).z, abs(normal).y);
+    vec3 N = normal;
+
+    return transpose(mat3(T, B, N));
+}
+
 /* DRAWBUFFERS:0 */
 layout(location = 0) out vec4 fragData0;
 

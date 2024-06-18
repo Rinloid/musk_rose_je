@@ -28,9 +28,13 @@
 
 #if defined GBUFFERS_FSH
 #extension GL_ARB_explicit_attrib_location : enable
+#extension GL_ARB_shader_texture_lod : enable
 
 in vec2 uv0;
 in vec2 uv1;
+in vec2 midUV;
+in vec4 vUV0;
+in vec4 vUV0AM;
 in mat3 tbnMatrix;
 in vec4 col;
 in vec4 viewPos;
@@ -44,6 +48,7 @@ in float mcEntity;
 #include "../programmes/utils/musk_rose_dither.glsl"
 #include "../programmes/utils/musk_rose_filter.glsl"
 #include "../programmes/utils/musk_rose_ssao.glsl"
+#include "../programmes/utils/musk_rose_pom.glsl"
 #include "../programmes/musk_rose_position.glsl"
 #include "../programmes/musk_rose_water.glsl"
 #include "../programmes/musk_rose_rain.glsl"
@@ -71,11 +76,29 @@ float isLine = 1.0;
 #if defined GBUFFERS_LINE
 	isLine = 0.1;
 #endif
+
+vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
+
+vec3 viewPos0 = viewPos.xyz;
+vec3 viewPos1 = getViewPos(depthtex1, uv).xyz;
+
+vec3 relPos0 = worldPos.xyz;
+vec3 relPos1 = getRelPos(depthtex1, uv).xyz;
+
+vec3 fragPos0 = relPos0 + cameraPosition;
+vec3 fragPos1 = relPos1 + cameraPosition;
+
+vec3 pos0 = normalize(relPos0);
+vec3 pos1 = normalize(relPos1);
+
+vec2 pomUV = uv0;
+float pomShadows = getParallaxUVAndShadows(relPos0, sunPos, pomUV);
+
 vec4 translucent = vec4(0.0, 0.0, 0.0, 0.0);
 vec3 bloom = vec3(0.0, 0.0, 0.0);
 float vanillaAO = 0.0;
 #if defined USE_TEXTURES
-	vec4 albedo = texture(gtexture, uv0);
+	vec4 albedo = texture(gtexture, pomUV);
 #	if defined GBUFFERS_TERRAIN || defined GBUFFERS_WATER
 		if (abs(col.r - col.g) > 0.001 || abs(col.g - col.b) > 0.001) albedo *= vec4(normalize(col.rgb), col.a);
 		vanillaAO = 1.0 - (col.g * 2.0 - (col.r < col.b ? col.r : col.b));
@@ -98,29 +121,17 @@ float vanillaAO = 0.0;
 //	albedo.rgb = vec3(getLuma(albedo.rgb));
 #endif
 
-vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
-
-vec3 viewPos0 = viewPos.xyz;
-vec3 viewPos1 = getViewPos(depthtex1, uv).xyz;
-
-vec3 relPos0 = worldPos.xyz;
-vec3 relPos1 = getRelPos(depthtex1, uv).xyz;
-
-vec3 fragPos0 = relPos0 + cameraPosition;
-vec3 fragPos1 = relPos1 + cameraPosition;
-
-vec3 pos0 = normalize(relPos0);
-vec3 pos1 = normalize(relPos1);
-
+float height = 0.0;
 vec3 fNormal = 
 #if !defined GBUFFERS_SKYBASIC
 	vNormal;
 #	if defined USE_TEXTURES && defined MC_NORMAL_MAP && PBR_TEXTURE == LAB_PBR
-		fNormal = vec3(texture(normals, uv0).rg * 2.0 - 1.0, sqrt(1.0 - dot(texture(normals, uv0).rg * 2.0 - 1.0, texture(normals, uv0).rg * 2.0 - 1.0)));
+		fNormal = vec3(texture(normals, pomUV).rg * 2.0 - 1.0, sqrt(1.0 - dot(texture(normals, pomUV).rg * 2.0 - 1.0, texture(normals, pomUV).rg * 2.0 - 1.0)));
 		fNormal = normalize(fNormal * tbnMatrix);
+		height = texture(normals, pomUV).a;
 #	endif
 	if (int(mcEntity) == 1) {
-		fNormal = normalize(getWaterWaveNormal(fragPos0.xz) * tbnMatrix);
+		fNormal = normalize(getWaterWaveNormal(getWaterParallax(tbnMatrix * viewPos0, fragPos0.xz)) * tbnMatrix);
 	}
 	fNormal = mat3(gbufferModelViewInverse) * fNormal;
 #else
@@ -143,9 +154,9 @@ float emissive = 0.0;
 float reflectance = 0.0;
 
 #if defined USE_TEXTURES && defined MC_SPECULAR_MAP && PBR_TEXTURE == LAB_PBR
-	perceptualSmoothness = texture(specular, uv0).r;
-	emissive = (texture(specular, uv0).a * 255.0) < 254.5 ? texture(specular, uv0).a : 0.0;
-	reflectance = texture(specular, uv0).g;
+	perceptualSmoothness = texture(specular, pomUV).r;
+	emissive = (texture(specular, pomUV).a * 255.0) < 254.5 ? texture(specular, pomUV).a : 0.0;
+	reflectance = texture(specular, pomUV).g;
 #endif
 
 #if PBR_TEXTURE == AUTO_GENERATION
@@ -208,7 +219,7 @@ bloom = mix(bloom, albedo.rgb, emissive);
 	fragData5 = vec4(roughness, emissive, reflectance, 1.0);
 
 	/* colortex8 */
-	fragData6 = vec4(int(mcEntity) * 0.1, isLine, 0.0, 1.0);
+	fragData6 = vec4(int(mcEntity) * 0.1, isLine, height, 1.0);
 
 	/* colortex9 */
 	fragData7 = vec4(bloom, 1.0);
@@ -226,9 +237,13 @@ in ivec2 vaUV2;
 in vec3 vaPosition;
 in vec3 vaNormal;
 in vec4 vaColor;
+in vec2 mc_midTexCoord;
 
 out vec2 uv0;
 out vec2 uv1;
+out vec2 midUV;
+out vec4 vUV0;
+out vec4 vUV0AM;
 out mat3 tbnMatrix;
 out vec4 col;
 out vec4 viewPos;
@@ -248,10 +263,17 @@ uv0 =
 #endif
 uv1 = 
 #if defined USE_LIGHTMAP
-	clamp(vaUV2 / 256.0, vec2(0.03125 /* 0.5 / 16.0 */ ), vec2(0.96875 /* 15.5 / 16.0 */ ));
+	clamp(vaUV2 / 256.0, vec2(0.03125 /* 0.5 / 16.0 */), vec2(0.96875 /* 15.5 / 16.0 */));
 #else
 	vec2(0.0, 0.0);
 #endif
+
+midUV = (textureMatrix * vec4(mc_midTexCoord, 0.0, 1.0)).xy;
+vec2 halfCoord = uv0 - midUV;
+vUV0AM.pq = abs(halfCoord) * 2;
+vUV0AM.st = min(uv0, midUV - halfCoord);
+vUV0.xy = sign(halfCoord) * 0.5 + 0.5;
+
 col = vaColor;
 
 worldPos = vec4(vaPosition, 1.0);
@@ -288,7 +310,7 @@ if (int(mc_Entity.x) == 10002) {
 
 #if defined GBUFFERS_LINE
 	const float LINE_WIDTH  = 2.0;
-	const float VIEW_SHRINK = 0.9609375 /* 1.0 - (1.0 / 256.0) */ ;
+	const float VIEW_SHRINK = 0.99609375 /* 1.0 - (1.0 / 256.0) */ ;
 	const mat4 VIEW_SCALE   = mat4(VIEW_SHRINK, 0.0, 0.0, 0.0,
 								   0.0, VIEW_SHRINK, 0.0, 0.0,
 								   0.0, 0.0, VIEW_SHRINK, 0.0,
